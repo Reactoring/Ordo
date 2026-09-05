@@ -1,0 +1,16 @@
+import { Link } from 'react-router';
+
+export function DocumentsPage() {
+  return (
+    <section className="workspace-panel">
+      <p className="eyebrow">Your workspace</p>
+      <h1>Documents, in order.</h1>
+      <p>No documents yet. Your purchase documents will appear here.</p>
+      <div className="actions">
+        <Link className="button" to="/review">
+          Open review workspace
+        </Link>
+      </div>
+    </section>
+  );
+}

@@ -68,10 +68,17 @@ The common Webpack factory handles TypeScript, CSS, fonts, and shared dependenci
 
 Root scripts coordinate the workspace checks. `tsconfig.base.json` supplies strict TypeScript settings, ESLint checks code quality, Prettier handles formatting, and Vitest runs behavior tests. Type checking runs separately from Webpack transpilation.
 
+### Navigation
+
+The host owns a single React Router `BrowserRouter`. `/` redirects to `/documents`, `/review` loads the review microfrontend, and unmatched URLs display a recovery page. URLs support direct entry, refresh, and browser history. Page components handle their own composition; `App.tsx` declares the routes and shared shell.
+
+The exposed review component does not depend on the host's router. Its typed `onClose` callback lets the host decide where to navigate, while the standalone review entry remains independently usable. Navigation tests resolve the remote to its source component through a Vitest-only alias; actual network loading is checked in the local browser.
+
 ## Stack
 
 - React and TypeScript with strict checking
 - Webpack 5 and Module Federation
+- React Router for URL-based navigation
 - Tailwind CSS
 - Vitest and React Testing Library for user-facing behavior
 - ESLint and Prettier
@@ -109,4 +116,4 @@ pnpm --filter @ordo/api build
 
 Build output lives in each application's `dist` directory. `REVIEW_REMOTE_URL` overrides the remote entry URL when building or starting the host; the default is `http://127.0.0.1:3001/remoteEntry.js`. The API accepts `PORT` and `HOST`. Environment variables must be set in the shell; `.env` files are not loaded automatically.
 
-Future hosting configuration must serve each frontend's assets, allow the host origin through CORS on review assets, route API requests, and provide the deployed review URL. Nothing is deployed by the development or build commands.
+Future hosting configuration must serve each frontend's assets, allow the host origin through CORS on review assets, route API requests, and provide the deployed review URL. The host also needs an SPA fallback for page URLs such as `/review`, excluding assets and `/api` requests. Nothing is deployed by the development or build commands.

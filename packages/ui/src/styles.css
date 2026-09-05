@@ -22,7 +22,8 @@ button {
   cursor: pointer;
 }
 
-button:focus-visible {
+button:focus-visible,
+a:focus-visible {
   outline: 3px solid #aa81d0;
   outline-offset: 4px;
 }
@@ -108,6 +109,9 @@ p {
 }
 
 .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 44px;
   padding: 12px 20px;
   border: 1px solid transparent;
@@ -115,6 +119,7 @@ p {
   background: #51306b;
   color: #fff;
   font-weight: 600;
+  text-decoration: none;
 }
 
 .button:hover {

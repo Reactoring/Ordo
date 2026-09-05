@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router';
 import '@ordo/ui/styles.css';
 import { App } from './App';
 
@@ -8,6 +9,8 @@ if (!root) throw new Error('The application root element is missing.');
 
 createRoot(root).render(
   <StrictMode>
-    <App />
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </StrictMode>,
 );
