@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@tanstack/react-query": "5.102.8",
     "@ordo/contracts": "workspace:*",
     "@ordo/ui": "workspace:*",
     "react": "19.2.8",

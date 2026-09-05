@@ -1,4 +1,5 @@
 import { Link } from 'react-router';
+import { ServiceStatus } from '../features/service-health/ServiceStatus';
 
 export function DocumentsPage() {
   return (
@@ -11,6 +12,7 @@ export function DocumentsPage() {
           Open review workspace
         </Link>
       </div>
+      <ServiceStatus />
     </section>
   );
 }

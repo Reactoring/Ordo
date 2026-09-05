@@ -20,6 +20,18 @@ module.exports = function createConfig(name, port, federation) {
       clean: true,
     },
     resolve: { extensions: ['.tsx', '.ts', '.js'] },
+    optimization: {
+      splitChunks: {
+        cacheGroups: {
+          query: {
+            test: /[\\/]node_modules[\\/]@tanstack[\\/]/,
+            name: 'query',
+            chunks: 'all',
+            priority: 10,
+          },
+        },
+      },
+    },
     module: {
       rules: [
         {
@@ -48,7 +60,10 @@ module.exports = function createConfig(name, port, federation) {
       ],
     },
     plugins: [
-      new HtmlWebpackPlugin({ template: path.join(root, 'config', 'index.html') }),
+      new HtmlWebpackPlugin({
+        template: path.join(root, 'config', 'index.html'),
+        publicPath: '/',
+      }),
       new webpack.container.ModuleFederationPlugin({
         name,
         filename: 'remoteEntry.js',
