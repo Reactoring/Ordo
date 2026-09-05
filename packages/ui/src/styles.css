@@ -1,0 +1,132 @@
+@import '@fontsource/dm-sans/latin-400.css';
+@import '@fontsource/dm-sans/latin-600.css';
+@import 'tailwindcss' source(none);
+
+@source '../../../apps';
+@source './';
+
+:root {
+  font-family: 'DM Sans', sans-serif;
+  color: #2d1a37;
+  background: #f8f6fb;
+  font-synthesis: none;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+button:focus-visible {
+  outline: 3px solid #aa81d0;
+  outline-offset: 4px;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 76px;
+  padding: 16px clamp(20px, 5vw, 80px);
+  background: #271332;
+  color: #f7f0ff;
+}
+
+.app-header > span:last-child {
+  font-size: 14px;
+}
+
+.ordo-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+.ordo-symbol {
+  display: inline-flex;
+  padding-right: 10px;
+}
+
+.ordo-symbol span {
+  width: 25px;
+  height: 25px;
+  border: 2px solid #d4b4ef;
+  border-radius: 50%;
+}
+
+.ordo-symbol span + span {
+  margin-left: -10px;
+}
+
+.workspace {
+  width: min(100% - 40px, 1120px);
+  margin: clamp(36px, 7vw, 90px) auto;
+}
+
+.workspace-panel {
+  padding: clamp(28px, 5vw, 64px);
+  border: 1px solid #e8e0ef;
+  border-radius: 24px;
+  background: #fff;
+}
+
+.eyebrow {
+  margin-bottom: 12px;
+  color: #755689;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0 0 16px;
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+}
+
+p {
+  line-height: 1.6;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.button {
+  min-height: 44px;
+  padding: 12px 20px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: #51306b;
+  color: #fff;
+  font-weight: 600;
+}
+
+.button:hover {
+  background: #3e2056;
+}
+
+.button-secondary {
+  border-color: #dfd2e9;
+  background: #f4edf9;
+  color: #51306b;
+}
+
+.button-secondary:hover {
+  background: #eae0f2;
+}

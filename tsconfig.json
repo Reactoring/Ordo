@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": { "noEmit": true },
+  "include": ["apps/**/*.test.ts", "apps/**/*.test.tsx", "tests", "vitest.config.ts"]
+}
