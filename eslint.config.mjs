@@ -13,6 +13,19 @@ export default tseslint.config(
     rules: reactHooks.configs.recommended.rules,
   },
   {
+    files: ['**/*.{jsx,tsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            ':matches(JSXElement, JSXFragment) > JSXExpressionContainer > LogicalExpression[operator="&&"], LogicalExpression[operator="&&"] > :matches(JSXElement, JSXFragment)',
+          message: 'Use a ternary (condition ? content : null) for conditional JSX rendering.',
+        },
+      ],
+    },
+  },
+  {
     files: ['**/*.cjs'],
     rules: { '@typescript-eslint/no-require-imports': 'off' },
   },

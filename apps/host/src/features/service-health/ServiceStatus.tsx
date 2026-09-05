@@ -12,7 +12,7 @@ export function ServiceStatus() {
   return (
     <div className="mt-6 flex flex-wrap items-center gap-3 text-sm">
       <p role="status">{message}</p>
-      {isError && (
+      {isError ? (
         <Button
           variant="secondary"
           disabled={isFetching || fetchStatus === 'paused'}
@@ -20,7 +20,7 @@ export function ServiceStatus() {
         >
           Try again
         </Button>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -1,9 +1,9 @@
 import type { ApiQueries, ServiceHealthResponse } from '@ordo/contracts';
 import { QueryClient } from '@tanstack/react-query';
 import { expectTypeOf } from 'vitest';
-import { getTypedQueryOptions } from './endpoints';
-import { createTypedQueryOptions, type QueryEndpoints } from './typed-query-options';
-import { useTypedQuery } from '../hooks/useTypedQuery';
+import { getTypedQueryOptions } from '../api/endpoints';
+import { createTypedQueryOptions, type QueryEndpoints } from '../api/typed-query-options';
+import { useTypedQuery } from './useTypedQuery';
 
 interface TestQueries {
   document: { params: { id: string }; response: { id: string } };
@@ -46,7 +46,7 @@ export function checkEndpointTypes() {
   void invalidEndpoints;
 }
 
-export function useQueryTypeChecks() {
+export function TypedQueryTypeChecks() {
   const query = useTypedQuery('serviceHealth');
   expectTypeOf(query.data).toEqualTypeOf<ServiceHealthResponse | undefined>();
   const selected = useTypedQuery('serviceHealth', undefined, { select: (data) => data.status });
