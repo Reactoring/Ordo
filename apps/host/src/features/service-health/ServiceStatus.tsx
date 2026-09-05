@@ -1,5 +1,5 @@
 import { Button } from '@ordo/ui';
-import { useTypedQuery } from '../../api/use-typed-query';
+import { useTypedQuery } from '../../hooks/useTypedQuery';
 
 export function ServiceStatus() {
   const { fetchStatus, isPending, isError, isFetching, refetch } = useTypedQuery('serviceHealth');

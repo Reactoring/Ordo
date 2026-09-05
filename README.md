@@ -80,12 +80,13 @@ Review stays router-independent through `onClose`. Vitest navigation tests use t
 
 One TanStack Query client is created above the router in `bootstrap.tsx`, preserving cache across navigation. The real `GET /api/health` request demonstrates loading, availability, connection, and retry states.
 
-| Host source directory     | Responsibility                                                               |
-| ------------------------- | ---------------------------------------------------------------------------- |
-| `app`                     | Application-level setup, including query defaults.                           |
-| `pages`                   | Route-level screen composition.                                              |
-| `api`                     | Typed endpoint catalog, query hook, JSON transport, and response validation. |
-| `features/service-health` | Service status UI and its behavior tests.                                    |
+| Host source directory     | Responsibility                                                                  |
+| ------------------------- | ------------------------------------------------------------------------------- |
+| `app`                     | Application-level setup, including query defaults.                              |
+| `pages`                   | Route-level screen composition.                                                 |
+| `api`                     | Typed endpoint catalog, query options, JSON transport, and response validation. |
+| `hooks`                   | Shared React hooks, named after their exports, such as `useTypedQuery.ts`.      |
+| `features/service-health` | Service status UI and its behavior tests.                                       |
 
 Components call `useTypedQuery` with a registered GET endpoint. `ApiQueries` in `@ordo/contracts` associates each endpoint with its parameters and response; the host catalog supplies its URL builder and runtime decoder. Responses enter as `unknown` and are validated before success. Query cancellation reaches `fetch` through `AbortSignal`.
 
@@ -112,7 +113,7 @@ Keys follow `['api', endpoint, params]`, separating endpoint and parameter combi
 - Webpack 5 and Module Federation
 - React Router for URL-based navigation
 - TanStack Query for server state, requests, and caching
-- Tailwind CSS
+- Tailwind CSS 4 through PostCSS; current screens primarily use custom shared CSS
 - Vitest and React Testing Library for user-facing behavior
 - ESLint and Prettier
 - Node.js and Express

@@ -1,7 +1,7 @@
 import { useQuery, type UseQueryOptions, type UseQueryResult } from '@tanstack/react-query';
 import type { ApiQueries } from '@ordo/contracts';
-import { getTypedQueryOptions } from './endpoints';
-import type { QueryParameters } from './typed-query-options';
+import { getTypedQueryOptions } from '../api/endpoints';
+import type { QueryParameters } from '../api/typed-query-options';
 
 type Endpoint = keyof ApiQueries;
 type ResponseFor<Key extends Endpoint> = ApiQueries[Key]['response'];

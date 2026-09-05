@@ -3,7 +3,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { expectTypeOf } from 'vitest';
 import { getTypedQueryOptions } from './endpoints';
 import { createTypedQueryOptions, type QueryEndpoints } from './typed-query-options';
-import { useTypedQuery } from './use-typed-query';
+import { useTypedQuery } from '../hooks/useTypedQuery';
 
 interface TestQueries {
   document: { params: { id: string }; response: { id: string } };
