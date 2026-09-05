@@ -1,7 +1,9 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createQueryClient } from '../../app/query-client';
-import { serviceHealthQuery } from './service-health.query';
+import { getTypedQueryOptions } from '../../api/endpoints';
+
+const serviceHealthQuery = getTypedQueryOptions('serviceHealth');
 
 let client: QueryClient;
 

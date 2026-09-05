@@ -35,7 +35,7 @@ This repository is a pnpm monorepo. **Applications** run independently; **packag
 | `apps/host`          | React application shell, navigation, and the document collection workflow.                     |
 | `apps/review`        | Review microfrontend with its own development server and build; exposes `review/ReviewModule`. |
 | `apps/api`           | Express application and HTTP server; currently provides `GET /api/health`.                     |
-| `packages/contracts` | Framework-independent TypeScript contracts, including the review module's props.               |
+| `packages/contracts` | Framework-independent types for review props, API query parameters, and responses.             |
 | `packages/ui`        | Shared React components, button variants, styles, and locally bundled fonts.                   |
 | `config`             | Common Webpack configuration and HTML template used by both frontends.                         |
 | `tests`              | Shared test setup; behavior tests live beside the code they exercise.                          |
@@ -80,18 +80,31 @@ Review stays router-independent through `onClose`. Vitest navigation tests use t
 
 One TanStack Query client is created above the router in `bootstrap.tsx`, preserving cache across navigation. The real `GET /api/health` request demonstrates loading, availability, connection, and retry states.
 
-| Host source directory     | Responsibility                                                                        |
-| ------------------------- | ------------------------------------------------------------------------------------- |
-| `app`                     | Application-level setup, including query defaults.                                    |
-| `pages`                   | Route-level screen composition.                                                       |
-| `api`                     | HTTP transport: JSON requests, status errors, and cancellation signals.               |
-| `features/service-health` | The query key, response validation, and service status UI, with their behavior tests. |
+| Host source directory     | Responsibility                                                               |
+| ------------------------- | ---------------------------------------------------------------------------- |
+| `app`                     | Application-level setup, including query defaults.                           |
+| `pages`                   | Route-level screen composition.                                              |
+| `api`                     | Typed endpoint catalog, query hook, JSON transport, and response validation. |
+| `features/service-health` | Service status UI and its behavior tests.                                    |
 
-Components use query options; transport uses `fetch`. Responses enter as `unknown` and are validated before success. Query cancellation reaches the HTTP request through `AbortSignal`.
+Components call `useTypedQuery` with a registered GET endpoint. `ApiQueries` in `@ordo/contracts` associates each endpoint with its parameters and response; the host catalog supplies its URL builder and runtime decoder. Responses enter as `unknown` and are validated before success. Query cancellation reaches `fetch` through `AbortSignal`.
+
+```tsx
+const health = useTypedQuery('serviceHealth');
+// health.data: ServiceHealthResponse | undefined
+
+const status = useTypedQuery('serviceHealth', undefined, {
+  select: (response) => response.status,
+  staleTime: 60_000,
+});
+// status.data: 'ok' | undefined
+```
+
+Endpoint parameters are inferred and required when declared. The hook retains options such as `enabled`, `select`, and `staleTime`; it owns the query function and cache key. Initial cache data and custom key hashing are excluded. `getTypedQueryOptions` supplies the same typed key and request for prefetching or invalidation. Compile-time tests reject unknown endpoints, incorrect parameters, and incompatible responses.
 
 Data stays fresh for 30 seconds; inactive cache entries expire after 5 minutes. Stale queries refetch on mount, focus, or reconnection. Network and HTTP 5xx failures retry once; HTTP 4xx and invalid responses do not. Cache is memory-only, with no polling.
 
-The current key is `['service', 'health']`; future writes will invalidate affected keys. TanStack Query owns server state; React owns transient UI state. Review currently makes no API requests and does not consume the host's query client.
+Keys follow `['api', endpoint, params]`, separating endpoint and parameter combinations. Only `serviceHealth` is registered today; new APIs require a contract, URL builder, and decoder. Future mutations will invalidate affected keys. TanStack Query owns server state; React owns transient UI state. Review currently makes no API requests and does not consume the host's query client.
 
 ## Stack
 

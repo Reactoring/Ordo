@@ -1,9 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
 import { Button } from '@ordo/ui';
-import { serviceHealthQuery } from './service-health.query';
+import { useTypedQuery } from '../../api/use-typed-query';
 
 export function ServiceStatus() {
-  const { fetchStatus, isPending, isError, isFetching, refetch } = useQuery(serviceHealthQuery);
+  const { fetchStatus, isPending, isError, isFetching, refetch } = useTypedQuery('serviceHealth');
 
   let message = 'Document service available';
   if (fetchStatus === 'paused') message = 'Waiting for a connection…';

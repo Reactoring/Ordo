@@ -4,6 +4,7 @@
   "include": [
     "apps/**/*.test.ts",
     "apps/**/*.test.tsx",
+    "apps/**/*.test-d.ts",
     "apps/**/*.d.ts",
     "tests",
     "vitest.config.ts"
