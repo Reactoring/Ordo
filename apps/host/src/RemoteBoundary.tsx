@@ -1,5 +1,5 @@
 import { Component, type ReactNode } from 'react';
-import { Button } from '@ordo/ui';
+import { Button, PageMessage } from '@ordo/ui';
 
 interface RemoteBoundaryProps {
   children: ReactNode;
@@ -16,16 +16,16 @@ export class RemoteBoundary extends Component<RemoteBoundaryProps, { hasError: b
   render() {
     if (this.state.hasError) {
       return (
-        <section className="workspace-panel" role="alert">
-          <h1>Review is temporarily unavailable</h1>
-          <p>Your documents are still accessible. Reload the page to try again.</p>
-          <div className="actions">
-            <Button onClick={() => window.location.reload()}>Reload page</Button>
-            <Button variant="secondary" onClick={this.props.onClose}>
-              Back to documents
-            </Button>
-          </div>
-        </section>
+        <PageMessage
+          role="alert"
+          title="Review is temporarily unavailable"
+          description="Your documents are still accessible. Reload the page to try again."
+        >
+          <Button onClick={() => window.location.reload()}>Reload page</Button>
+          <Button variant="secondary" onClick={this.props.onClose}>
+            Back to documents
+          </Button>
+        </PageMessage>
       );
     }
 

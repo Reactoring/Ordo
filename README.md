@@ -4,7 +4,7 @@ ORDO helps independent professionals collect purchase documents, review extracte
 
 ## Status
 
-The local foundation includes a federated review module, URL navigation, and a cached API health request. Screens currently show empty states and service availability. Uploads, extraction, editing, and export are not implemented yet.
+The local foundation includes a federated review module, URL navigation, and a cached API health request. The responsive Documents screen opens with five clearly labeled example invoices, local search and status filters, and an empty workspace preview. The import control is disabled: uploads, extraction, editing, and export are not implemented yet.
 
 ## First release
 
@@ -42,7 +42,9 @@ This repository is a pnpm monorepo. **Applications** run independently; **packag
 
 Each workspace has its own `package.json`. pnpm links `"@ordo/ui": "workspace:*"` to the local package, which is included at build time. Shared package changes require rebuilding their consumers. Dependencies, build output, and local caches are excluded from Git.
 
-`@ordo/ui` exports `Button` with primary and secondary variants, native button props, and `type="button"` by default. Navigation links use the same appearance through `buttonClassName`, keeping the UI package independent of React Router.
+`@ordo/ui` exports buttons, badges, filter chips, icons, empty states, and a shared application shell. `Button` supports primary, secondary, and ghost variants, two sizes, native button props, and `type="button"` by default. Navigation links use the same appearance through `buttonClassName`, keeping the UI package independent of React Router.
+
+Components use Tailwind utilities. `packages/ui/src/styles.css` contains Tailwind imports, shared theme tokens, source directories, and base styles. Both frontends scan application and UI-package sources so the same utilities are available in the host and standalone review build.
 
 ### How the microfrontend loads
 
@@ -88,6 +90,7 @@ One TanStack Query client is created above the router in `bootstrap.tsx`, preser
 | `pages`                   | Route-level screen composition.                                                 |
 | `api`                     | Typed endpoint catalog, query options, JSON transport, and response validation. |
 | `hooks`                   | Shared React hooks, named after their exports, such as `useTypedQuery.ts`.      |
+| `features/documents`      | Document cards, toolbar, example data, and a feature-local workspace hook.      |
 | `features/service-health` | Service status UI and its behavior tests.                                       |
 
 Components call `useTypedQuery` with a registered GET endpoint. `ApiQueries` in `@ordo/contracts` associates each endpoint with its parameters and response; the host catalog supplies its URL builder and runtime decoder. Responses enter as `unknown` and are validated before success. Query cancellation reaches `fetch` through `AbortSignal`.
@@ -115,7 +118,7 @@ Keys follow `['api', endpoint, params]`, separating endpoint and parameter combi
 - Webpack 5 and Module Federation
 - React Router for URL-based navigation
 - TanStack Query for server state, requests, and caching
-- Tailwind CSS 4 through PostCSS; current screens primarily use custom shared CSS
+- Tailwind CSS 4 through PostCSS, with shared theme tokens and responsive utilities
 - Vitest and React Testing Library for user-facing behavior
 - ESLint and Prettier
 - Node.js and Express
@@ -139,7 +142,7 @@ pnpm dev
 | Standalone review | http://127.0.0.1:3001            |
 | API health        | http://127.0.0.1:4000/api/health |
 
-Select **Open review workspace** in the host to load Review. The host proxies `/api` to the backend. Development servers bind to loopback by default.
+Use **Clear examples** and **Show examples** to switch between the populated and empty Documents screen. Filters and search operate on local example data; these illustrations are not uploaded files or extraction results. This preview state resets when the page remounts. Select **Open review** to load the review module's empty state. The host proxies `/api` to the backend. Development servers bind to loopback by default.
 
 ```sh
 pnpm check          # Formatting, lint, types, tests, and production builds

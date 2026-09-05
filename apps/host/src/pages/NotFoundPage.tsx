@@ -1,17 +1,16 @@
 import { Link } from 'react-router';
-import { buttonClassName } from '@ordo/ui';
+import { PageMessage, buttonClassName } from '@ordo/ui';
 
 export function NotFoundPage() {
   return (
-    <section className="workspace-panel">
-      <p className="eyebrow">404</p>
-      <h1>Page not found</h1>
-      <p>This page does not exist. You can return to your documents.</p>
-      <div className="actions">
-        <Link className={buttonClassName({ variant: 'secondary' })} to="/documents">
-          Back to documents
-        </Link>
-      </div>
-    </section>
+    <PageMessage
+      label="404"
+      title="Page not found"
+      description="This page does not exist. You can return to your documents."
+    >
+      <Link className={buttonClassName({ variant: 'secondary' })} to="/documents">
+        Back to documents
+      </Link>
+    </PageMessage>
   );
 }

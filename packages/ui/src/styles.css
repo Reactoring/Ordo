@@ -5,138 +5,49 @@
 @source '../../../apps';
 @source './';
 
-:root {
-  font-family: 'DM Sans', sans-serif;
-  color: #2d1a37;
-  background: #f8f6fb;
-  font-synthesis: none;
+@theme {
+  --font-sans: 'DM Sans', sans-serif;
+  --color-plum-50: #f5f0fb;
+  --color-plum-100: #e9ddf5;
+  --color-plum-200: #d5c0eb;
+  --color-plum-300: #b89bd7;
+  --color-plum-400: #9c79c2;
+  --color-plum-500: #79529d;
+  --color-plum-600: #68408d;
+  --color-plum-700: #543075;
+  --color-plum-800: #43215f;
+  --color-plum-900: #2b143f;
+  --color-plum-950: #1e0e2e;
+  --color-canvas: #f9f7fc;
+  --color-ink: #24172e;
+  --color-muted: #73657f;
+  --color-line: #e7e0ed;
+  --color-success: #276247;
+  --color-success-soft: #edf7f0;
+  --color-warning: #89520b;
+  --color-warning-soft: #fff4e4;
+  --shadow-paper: 0 5px 22px -8px rgb(43 20 63 / 20%);
 }
 
-body {
-  margin: 0;
-  min-width: 320px;
-}
+@layer base {
+  :root {
+    font-synthesis: none;
+  }
 
-button {
-  font: inherit;
-  cursor: pointer;
-}
+  body {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
 
-button:focus-visible,
-a:focus-visible {
-  outline: 3px solid #aa81d0;
-  outline-offset: 4px;
-}
+  button:not(:disabled) {
+    cursor: pointer;
+  }
 
-.app-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  min-height: 76px;
-  padding: 16px clamp(20px, 5vw, 80px);
-  background: #271332;
-  color: #f7f0ff;
-}
-
-.app-header > span:last-child {
-  font-size: 14px;
-}
-
-.ordo-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-}
-
-.ordo-symbol {
-  display: inline-flex;
-  padding-right: 10px;
-}
-
-.ordo-symbol span {
-  width: 25px;
-  height: 25px;
-  border: 2px solid #d4b4ef;
-  border-radius: 50%;
-}
-
-.ordo-symbol span + span {
-  margin-left: -10px;
-}
-
-.workspace {
-  width: min(100% - 40px, 1120px);
-  margin: clamp(36px, 7vw, 90px) auto;
-}
-
-.workspace-panel {
-  padding: clamp(28px, 5vw, 64px);
-  border: 1px solid #e8e0ef;
-  border-radius: 24px;
-  background: #fff;
-}
-
-.eyebrow {
-  margin-bottom: 12px;
-  color: #755689;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-h1 {
-  margin: 0 0 16px;
-  font-size: clamp(28px, 4vw, 44px);
-  font-weight: 600;
-  letter-spacing: -0.04em;
-  line-height: 1.15;
-}
-
-p {
-  line-height: 1.6;
-}
-
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 28px;
-}
-
-.button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 12px 20px;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  background: #51306b;
-  color: #fff;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.button:hover:not(:disabled) {
-  background: #3e2056;
-}
-
-.button-secondary {
-  border-color: #dfd2e9;
-  background: #f4edf9;
-  color: #51306b;
-}
-
-.button-secondary:hover:not(:disabled) {
-  background: #eae0f2;
-}
-
-.button:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible {
+    outline: 2px solid var(--color-plum-400);
+    outline-offset: 4px;
+  }
 }

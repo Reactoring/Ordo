@@ -10,11 +10,12 @@ export function ServiceStatus() {
   else if (isError) message = 'Document service unavailable.';
 
   return (
-    <div className="mt-6 flex flex-wrap items-center gap-3 text-sm">
+    <div className="flex flex-wrap items-center gap-3 text-xs text-muted">
       <p role="status">{message}</p>
       {isError ? (
         <Button
           variant="secondary"
+          size="sm"
           disabled={isFetching || fetchStatus === 'paused'}
           onClick={() => void refetch()}
         >
