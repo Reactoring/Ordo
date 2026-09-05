@@ -1,4 +1,5 @@
 import type { ReviewModuleProps } from '@ordo/contracts';
+import { Button } from '@ordo/ui';
 import '@ordo/ui/styles.css';
 
 export default function ReviewModule({ onClose }: ReviewModuleProps) {
@@ -8,9 +9,9 @@ export default function ReviewModule({ onClose }: ReviewModuleProps) {
       <h1>No document selected</h1>
       <p>Choose a document from your library to review its details.</p>
       <div className="actions">
-        <button className="button button-secondary" onClick={onClose}>
+        <Button variant="secondary" onClick={onClose}>
           Back to documents
-        </button>
+        </Button>
       </div>
     </section>
   );

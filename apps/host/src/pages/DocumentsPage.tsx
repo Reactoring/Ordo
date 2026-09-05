@@ -1,4 +1,5 @@
 import { Link } from 'react-router';
+import { buttonClassName } from '@ordo/ui';
 import { ServiceStatus } from '../features/service-health/ServiceStatus';
 
 export function DocumentsPage() {
@@ -8,7 +9,7 @@ export function DocumentsPage() {
       <h1>Documents, in order.</h1>
       <p>No documents yet. Your purchase documents will appear here.</p>
       <div className="actions">
-        <Link className="button" to="/review">
+        <Link className={buttonClassName()} to="/review">
           Open review workspace
         </Link>
       </div>

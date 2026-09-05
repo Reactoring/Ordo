@@ -1,3 +1,6 @@
+export { Button, type ButtonProps } from './button/Button';
+export { buttonClassName, type ButtonVariant } from './button/button-styles';
+
 export function OrdoBrand() {
   return (
     <span className="ordo-brand" aria-label="ORDO">

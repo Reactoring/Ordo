@@ -1,4 +1,5 @@
 import { Link } from 'react-router';
+import { buttonClassName } from '@ordo/ui';
 
 export function NotFoundPage() {
   return (
@@ -7,7 +8,7 @@ export function NotFoundPage() {
       <h1>Page not found</h1>
       <p>This page does not exist. You can return to your documents.</p>
       <div className="actions">
-        <Link className="button button-secondary" to="/documents">
+        <Link className={buttonClassName({ variant: 'secondary' })} to="/documents">
           Back to documents
         </Link>
       </div>

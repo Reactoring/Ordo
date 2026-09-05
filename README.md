@@ -36,11 +36,13 @@ This repository is a pnpm monorepo. **Applications** run independently; **packag
 | `apps/review`        | Review microfrontend with its own development server and build; exposes `review/ReviewModule`. |
 | `apps/api`           | Express application and HTTP server; currently provides `GET /api/health`.                     |
 | `packages/contracts` | Framework-independent TypeScript contracts, including the review module's props.               |
-| `packages/ui`        | Shared branding, styles, and locally bundled fonts.                                            |
+| `packages/ui`        | Shared React components, button variants, styles, and locally bundled fonts.                   |
 | `config`             | Common Webpack configuration and HTML template used by both frontends.                         |
 | `tests`              | Shared test setup; behavior tests live beside the code they exercise.                          |
 
 Each workspace has its own `package.json`. pnpm links `"@ordo/ui": "workspace:*"` to the local package, which is included at build time. Shared package changes require rebuilding their consumers. Dependencies, build output, and local caches are excluded from Git.
+
+`@ordo/ui` exports `Button` with primary and secondary variants, native button props, and `type="button"` by default. Navigation links use the same appearance through `buttonClassName`, keeping the UI package independent of React Router.
 
 ### How the microfrontend loads
 

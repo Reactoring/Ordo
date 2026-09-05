@@ -122,7 +122,7 @@ p {
   text-decoration: none;
 }
 
-.button:hover {
+.button:hover:not(:disabled) {
   background: #3e2056;
 }
 
@@ -132,6 +132,11 @@ p {
   color: #51306b;
 }
 
-.button-secondary:hover {
+.button-secondary:hover:not(:disabled) {
   background: #eae0f2;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
