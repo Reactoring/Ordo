@@ -28,15 +28,45 @@ The first release targets a documented set of invoice layouts. Scanned PDFs, arb
 
 ## Architecture
 
-- **`apps/host`:** application shell and navigation; owns the document collection workflow.
-- **`apps/review`:** independently built review microfrontend; exposes `review/ReviewModule`.
-- **`apps/api`:** Node.js API; currently provides `GET /api/health`.
-- **`packages/contracts`:** TypeScript contracts for integration between applications.
-- **`packages/ui`:** shared branding, styles, and locally bundled fonts.
+This repository is a pnpm monorepo. **Applications** run independently; **packages** provide reusable code consumed by those applications.
 
-The host loads the review module at runtime through Module Federation. Each frontend has its own build output. Integration uses explicit typed contracts, with state owned by each application. An error boundary preserves host navigation when the remote fails to load or render.
+| Directory            | Responsibility                                                                                 |
+| -------------------- | ---------------------------------------------------------------------------------------------- |
+| `apps/host`          | React application shell, navigation, and the document collection workflow.                     |
+| `apps/review`        | Review microfrontend with its own development server and build; exposes `review/ReviewModule`. |
+| `apps/api`           | Express application and HTTP server; currently provides `GET /api/health`.                     |
+| `packages/contracts` | Framework-independent TypeScript contracts, including the review module's props.               |
+| `packages/ui`        | Shared branding, styles, and locally bundled fonts.                                            |
+| `config`             | Common Webpack configuration and HTML template used by both frontends.                         |
+| `tests`              | Shared test setup; behavior tests live beside the code they exercise.                          |
 
-Within each application, business rules remain separate from React components, HTTP handlers, and document-processing libraries.
+Each workspace has its own `package.json`. Dependencies such as `"@ordo/ui": "workspace:*"` resolve to local packages through pnpm. Those packages are included in the consuming application's build; changing them requires rebuilding the affected applications. Generated `dist`, dependencies, caches, and temporary files are excluded from Git.
+
+### How the microfrontend loads
+
+```mermaid
+flowchart LR
+    Host["Host :3000"] -->|"Loads ReviewModule at runtime"| Review["Review :3001"]
+    Review -->|"Calls onClose"| Host
+    UI["Shared UI package"] -.->|"Included at build time"| Host
+    UI -.->|"Included at build time"| Review
+```
+
+1. The review application's Webpack `exposes` configuration makes `ReviewModule.tsx` available through a generated `remoteEntry.js`.
+2. The host's `remotes` configuration maps the name `review` to that remote entry URL. `React.lazy(() => import('review/ReviewModule'))` loads the component asynchronously.
+3. The host renders the component in its React tree and passes typed props. The `onClose` callback currently returns to the document workspace.
+
+`Suspense` handles loading, while an error boundary preserves host navigation if the remote fails to load or render. React and React DOM are shared as singletons. The asynchronous `index.ts` → `bootstrap.tsx` entry lets Webpack initialize shared dependencies before React starts. `remotes.d.ts` describes the exposed component to TypeScript; it does not load or validate remote code at runtime.
+
+The standalone review page is a development entry point. The host imports the exposed component directly, without running that page's `createRoot()`.
+
+### Boundaries and configuration
+
+The host owns navigation, the review module owns its review interface, and the API owns document processing. Cross-application communication uses public contracts rather than imports of another application's internal files. The shared packages contain no application state. Business rules will stay independent of React, HTTP handlers, and extraction libraries as those features are added.
+
+The common Webpack factory handles TypeScript, CSS, fonts, and shared dependencies. Each frontend's configuration supplies its name, port, and federation settings. Each frontend produces a separate build, allowing independent deployment while its public contract and shared dependency versions remain compatible. Deployment is not configured yet.
+
+Root scripts coordinate the workspace checks. `tsconfig.base.json` supplies strict TypeScript settings, ESLint checks code quality, Prettier handles formatting, and Vitest runs behavior tests. Type checking runs separately from Webpack transpilation.
 
 ## Stack
 
