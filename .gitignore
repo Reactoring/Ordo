@@ -1,0 +1,30 @@
+# Dependencies and generated output
+node_modules/
+dist/
+build/
+coverage/
+.cache/
+.turbo/
+*.tsbuildinfo
+playwright-report/
+test-results/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local documents and processing data
+uploads/
+.data/
+.tmp/
+work/
+
+# Logs and editor files
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
