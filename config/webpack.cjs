@@ -3,6 +3,7 @@ const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 const root = path.resolve(__dirname, '..');
+const developmentOrigins = new Set(['http://localhost:3000', 'http://127.0.0.1:3000']);
 
 module.exports = function createConfig(name, port, federation) {
   return (_env, argv) => ({
@@ -78,8 +79,15 @@ module.exports = function createConfig(name, port, federation) {
     devServer: {
       host: '127.0.0.1',
       port,
+      // Use the page's hostname for WebSockets while keeping each frontend's port.
+      client: { webSocketURL: { hostname: '0.0.0.0', port } },
       historyApiFallback: true,
-      headers: { 'Access-Control-Allow-Origin': 'http://127.0.0.1:3000' },
+      headers: (request) => {
+        const origin = request.headers.origin;
+        return developmentOrigins.has(origin)
+          ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' }
+          : { Vary: 'Origin' };
+      },
       proxy: name === 'host' ? [{ context: ['/api'], target: 'http://127.0.0.1:4000' }] : [],
     },
   });

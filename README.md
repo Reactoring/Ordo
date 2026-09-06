@@ -144,6 +144,8 @@ pnpm dev
 
 Use **Clear examples** and **Show examples** to switch between the populated and empty Documents screen. Filters and search operate on local example data; these illustrations are not uploaded files or extraction results. This preview state resets when the page remounts. Select **Open review** to load the review module's empty state. The host proxies `/api` to the backend. Development servers bind to loopback by default.
 
+Both `localhost` and `127.0.0.1` work locally. WebSocket clients follow the page's hostname while retaining their own frontend's port. Cross-origin assets are allowed only for the host's two local origins. Restart `pnpm dev` after changing Webpack configuration, then reload open pages.
+
 ```sh
 pnpm check          # Formatting, lint, types, tests, and production builds
 pnpm test:watch     # Watch behavior tests
