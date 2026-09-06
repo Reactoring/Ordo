@@ -17,7 +17,21 @@ export function useDocumentReview(id: string) {
     client.setQueryData(key, (current) =>
       current && current.document.revision > response.document.revision ? current : response,
     );
-    await client.invalidateQueries({ queryKey: getTypedQueryOptions('documents').queryKey });
+    const collectionKey = getTypedQueryOptions('documents').queryKey;
+    const published = client.getQueryData(key)?.document ?? response.document;
+    client.setQueryData(collectionKey, (current) =>
+      current
+        ? {
+            ...current,
+            documents: current.documents.map((document) =>
+              document.id === response.document.id
+                ? { ...document, status: published.status }
+                : document,
+            ),
+          }
+        : current,
+    );
+    await client.invalidateQueries({ queryKey: collectionKey });
   }
   const extraction = useTypedMutation('extractDocument', { onSuccess: publish });
   const review = useTypedMutation('reviewDocument', {

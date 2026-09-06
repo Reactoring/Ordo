@@ -23,5 +23,7 @@ export type ReviewModuleProps = { onClose: () => void } & (
       document: DocumentDetails;
       originalUrl: string;
       onSave: (input: ReviewDocumentInput) => Promise<DocumentDetails>;
+      saveLabel?: string;
+      saveHint?: string;
     }
 );

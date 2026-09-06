@@ -6,6 +6,7 @@ import { UploadCard } from '../features/documents/components/UploadCard';
 import { useDocumentsWorkspace } from '../features/documents/hooks/useDocumentsWorkspace';
 import { useDocumentUpload } from '../features/documents/hooks/useDocumentUpload';
 import { ServiceStatus } from '../features/service-health/ServiceStatus';
+import { ReviewConfirmation } from '../features/document-review/components/ReviewConfirmation';
 
 export function DocumentsPage() {
   const workspace = useDocumentsWorkspace();
@@ -23,6 +24,7 @@ export function DocumentsPage() {
   );
   return (
     <div>
+      <ReviewConfirmation />
       <div className="mb-7 grid items-center gap-6 lg:grid-cols-[1.2fr_1fr] lg:gap-10">
         <div>
           <p className="mb-3 text-[11px] font-semibold tracking-[0.18em] text-plum-600 uppercase">

@@ -8,9 +8,18 @@ interface ReviewWorkspaceProps {
   originalUrl: string;
   onSave: (input: ReviewDocumentInput) => Promise<DocumentDetails>;
   onClose: () => void;
+  saveLabel?: string;
+  saveHint?: string;
 }
 
-export function ReviewWorkspace({ document, originalUrl, onSave, onClose }: ReviewWorkspaceProps) {
+export function ReviewWorkspace({
+  document,
+  originalUrl,
+  onSave,
+  onClose,
+  saveLabel = 'Save and validate',
+  saveHint = 'Your corrections are saved when you validate.',
+}: ReviewWorkspaceProps) {
   const form = useReviewForm(document, onSave);
   const { errors, isSubmitting, isDirty } = form.formState;
   const reviewed = form.saved || (document.status === 'reviewed' && !isDirty);
@@ -128,13 +137,10 @@ export function ReviewWorkspace({ document, originalUrl, onSave, onClose }: Revi
               disabled={isSubmitting || form.hasNewerVersion}
               className="w-full"
             >
-              <Icon name="check" className="size-4" />{' '}
-              {isSubmitting ? 'Saving…' : 'Save and validate'}
+              <Icon name="check" className="size-4" /> {isSubmitting ? 'Saving…' : saveLabel}
             </Button>
             <p role="status" className="mt-3 text-center text-xs leading-5 text-muted">
-              {form.saved
-                ? 'Changes saved. This document is reviewed.'
-                : 'Your corrections are saved when you validate.'}
+              {form.saved ? 'Changes saved. This document is reviewed.' : saveHint}
             </p>
           </div>
         </form>

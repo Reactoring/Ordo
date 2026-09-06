@@ -90,7 +90,7 @@ Review also has a standalone development page, initially showing its empty state
 
 The host owns navigation, Review owns its interface, and the API owns processing. Applications communicate through public contracts. Shared packages contain no application state. Extraction rules are separate from PDF.js and Express; form conversion and validation are separate from React components. The API independently validates every save request.
 
-`ReviewModuleProps` accepts either an empty state with `onClose`, or document details, an original URL, and typed `onSave`/`onClose` callbacks. The host owns requests, save mutations, and cache invalidation; Review owns its React Hook Form draft, validation, and feedback. `onSave` resolves with the saved document or rejects with an error. Review does not import the host's query client, endpoints, or router; its behavior tests exercise the same props without either provider.
+`ReviewModuleProps` accepts either an empty state with `onClose`, or document details, an original URL, and typed `onSave`/`onClose` callbacks. Optional `saveLabel` and `saveHint` describe the host's next action. The host owns requests, save mutations, and cache invalidation; Review owns its React Hook Form draft, validation, and feedback. `onSave` resolves with the saved document or rejects with an error. Review does not import the host's query client, endpoints, or router; its behavior tests exercise the same props without either provider.
 
 The review form uses decimal strings for editing and converts them to integer cents before saving. It requires a supplier, document reference, real calendar date, supported currency, and non-negative amounts with at most two decimal places. Subtotal plus tax must equal the total. Failed saves preserve the draft; successful saves reset the form to the returned fields and revision. Background data updates do not reset a draft. A newer revision disables saving until the user reopens the document. Changing document IDs starts a fresh form.
 
@@ -105,6 +105,10 @@ Across all applications and shared packages, custom React hooks live in a `hooks
 One React Router `BrowserRouter` runs in the host. `/` redirects to `/documents`; `/review/:documentId` opens a selected document, and `/review` shows the empty review state. Unknown pages and unavailable documents have recovery screens. Direct links, refresh, and browser history are supported. `App.tsx` declares routes; page components compose screens.
 
 Review stays router-independent through `onClose`. Vitest navigation tests use the actual review component through a local alias; browser checks verify network-based federation.
+
+Opening a document card starts an individual review: **Save and return** validates it and opens `/documents?status=reviewed` with a confirmation. **Open review** in the summary starts a queue at `/review/:documentId?mode=queue`. **Save and next** validates the current document and opens the next unreviewed file; **Save and finish** returns to Reviewed when the queue is empty. The URL preserves queue mode on refresh. Queue counts come from the collection, and already reviewed documents are skipped.
+
+`useReviewFlow` coordinates these transitions in the host. It checks the refreshed collection after a successful save and announces the saved and next filenames in a dismissible, focused confirmation banner, including while the next document loads. If the queue cannot be refreshed, the user returns to Reviewed with confirmation that the save succeeded. Failed saves preserve the current document and draft. Leaving the page during a save prevents a later queue transition from taking over navigation.
 
 ### API requests and cache
 
@@ -145,7 +149,7 @@ Keys follow `['api', endpoint, params]`, separating endpoint and parameter combi
 
 `useDocumentUpload` validates the selection, reports upload and duplicate outcomes, and invalidates the document collection after each attempt. This also reveals any files saved before an unexpected batch failure. Successful uploads clear search and the status filter so the imported documents are visible. Example metadata lives only in `tests/fixtures` and is not used by the running application.
 
-`useDocumentReview` loads details and prepares metadata-only imports once when opened. Successful extraction and review mutations cancel stale detail requests, update the typed detail cache without replacing a newer revision, and invalidate the collection. A conflicting save refreshes details while Review retains the draft. Failed background reads do not unmount an open form. The save callback resolves after cache updates, so returning to Documents shows the saved status.
+`useDocumentReview` loads details and prepares earlier pending imports once when opened. Successful extraction and review mutations cancel stale detail requests, update the typed detail cache without replacing a newer revision, update the cached collection's status, and invalidate the collection. A conflicting save refreshes details while Review retains the draft. Failed background reads do not unmount an open form. The save callback resolves after cache updates, so returning to Documents shows the saved status even when the collection refresh fails.
 
 ## Stack
 
@@ -180,7 +184,7 @@ pnpm dev
 
 Use **Add documents** or drop files onto the import card. Each selection accepts up to five PDF/PNG/JPEG files, 10 MB each. The collection displays image previews and a PDF placeholder; **Open original** opens the saved file in a new tab. Reimporting identical bytes reports a duplicate. **All documents**, **Needs review**, and **Reviewed** filters combine with file-name search. The selected status lives in the URL (`?status=needs_review` or `?status=reviewed`) and survives refresh and browser history. Successful imports clear filters so new files are visible; files are not grouped by format.
 
-Select **Review** on a card or **Open review** in the summary to open the next unreviewed document. Earlier imports are prepared on first opening. Check or complete the form, then select **Save and validate**. The card becomes **Reviewed** and can be reopened with **View details**. Images and scanned PDFs show OCR suggestions with a reminder to check them, or a manual-entry explanation when reading fails. The original preview uses the browser's PDF viewer or an image; a new-tab link remains available if the browser cannot display it inline. Unsaved edits stay in the current form and are discarded when leaving the page.
+Select **Review** on a card for an individual review, or **Open review** in the summary to review pending documents one by one. Earlier imports are prepared on first opening. Check or complete the form; the save button explains whether it will return to Reviewed, open the next document, or finish the queue. Every successful save has a visible confirmation. The card becomes **Reviewed** and can be reopened with **View details**. Images and scanned PDFs show OCR suggestions with a reminder to check them, or a manual-entry explanation when reading fails. The original preview uses the browser's PDF viewer or an image; a new-tab link remains available if the browser cannot display it inline. Unsaved edits stay in the current form and are discarded when leaving the page.
 
 The host proxies `/api` to the backend. Development servers bind to loopback by default.
 

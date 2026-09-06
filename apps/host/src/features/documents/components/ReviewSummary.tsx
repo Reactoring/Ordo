@@ -31,14 +31,14 @@ export function ReviewSummary({
         </h2>
         <p className="mt-1 text-xs leading-5 text-muted">
           {remaining > 0
-            ? 'Check the details, then carry on with your day.'
+            ? 'Review one by one. Each save opens the next document.'
             : total > 0
               ? 'All your documents have been reviewed.'
               : 'Collect your invoices, then review the details.'}
         </p>
         {nextDocumentId ? (
           <Link
-            to={`/review/${nextDocumentId}`}
+            to={`/review/${nextDocumentId}?mode=queue`}
             aria-label="Open review workspace"
             className={buttonClassName({ variant: 'ghost', size: 'sm', className: 'mt-2' })}
           >

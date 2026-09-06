@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router';
 import { Button, PageMessage } from '@ordo/ui';
 import { RemoteBoundary } from '../RemoteBoundary';
 import { useDocumentReview } from '../features/document-review/hooks/useDocumentReview';
+import { useReviewFlow } from '../features/document-review/hooks/useReviewFlow';
+import { ReviewConfirmation } from '../features/document-review/components/ReviewConfirmation';
 import { documentContentUrl } from '../features/documents/format-document';
 
 const ReviewModule = lazy(() => import('review/ReviewModule'));
@@ -13,20 +15,24 @@ export function ReviewPage() {
   const closeReview = () => void navigate('/documents');
 
   return (
-    <RemoteBoundary onClose={closeReview}>
-      <Suspense fallback={<p role="status">Opening review…</p>}>
-        {documentId ? (
-          <ConnectedReview key={documentId} documentId={documentId} onClose={closeReview} />
-        ) : (
-          <ReviewModule onClose={closeReview} />
-        )}
-      </Suspense>
-    </RemoteBoundary>
+    <div>
+      <ReviewConfirmation />
+      <RemoteBoundary onClose={closeReview}>
+        <Suspense fallback={<p role="status">Opening review…</p>}>
+          {documentId ? (
+            <ConnectedReview key={documentId} documentId={documentId} onClose={closeReview} />
+          ) : (
+            <ReviewModule onClose={closeReview} />
+          )}
+        </Suspense>
+      </RemoteBoundary>
+    </div>
   );
 }
 
 function ConnectedReview({ documentId, onClose }: { documentId: string; onClose: () => void }) {
   const review = useDocumentReview(documentId);
+  const flow = useReviewFlow(documentId, review.save);
   if (review.notFound) {
     return (
       <PageMessage
@@ -60,11 +66,28 @@ function ConnectedReview({ documentId, onClose }: { documentId: string; onClose:
       </p>
     );
   return (
-    <ReviewModule
-      document={review.document}
-      originalUrl={documentContentUrl(documentId)}
-      onSave={review.save}
-      onClose={onClose}
-    />
+    <div>
+      {flow.isQueue ? (
+        <div className="mb-5 rounded-xl border border-plum-200 bg-plum-50 px-4 py-3 text-sm text-plum-800">
+          <p className="font-semibold">
+            Review queue
+            {flow.remaining !== undefined
+              ? ` · ${flow.remaining} ${flow.remaining === 1 ? 'document' : 'documents'} remaining`
+              : ''}
+          </p>
+          <p className="mt-1 text-xs leading-5">
+            Each validation saves your changes and opens the next document.
+          </p>
+        </div>
+      ) : null}
+      <ReviewModule
+        document={review.document}
+        originalUrl={documentContentUrl(documentId)}
+        onSave={flow.save}
+        saveLabel={flow.saveLabel}
+        saveHint={flow.saveHint}
+        onClose={onClose}
+      />
+    </div>
   );
 }
