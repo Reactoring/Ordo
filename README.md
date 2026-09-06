@@ -70,6 +70,8 @@ Review also has a standalone development page. The host uses the exposed compone
 
 The host owns navigation, Review owns its interface, and the API owns processing. Applications communicate through public contracts. Shared packages contain no application state. Future business rules will remain independent of React, HTTP, and extraction libraries.
 
+The review form will receive document data and typed callbacks through `ReviewModuleProps`. The host will own document requests, save mutations, and cache invalidation; Review will own the editable draft and form feedback. An asynchronous save callback will let Review track completion or failure without importing the host's query client, endpoints, or router. Standalone development will supply example data and callbacks through the same interface. These props will be added with the form; the current contract exposes only `onClose`.
+
 The common Webpack factory handles TypeScript, CSS, fonts, and federation. Each frontend supplies its name, port, and exposed or consumed modules. Query dependencies form a separate chunk. Frontends have separate builds and can be deployed independently while their contracts and shared dependencies remain compatible.
 
 Root scripts coordinate checks: strict TypeScript settings come from `tsconfig.base.json`, with ESLint, Prettier, and Vitest for code quality, formatting, and behavior tests. Type checking runs separately from Webpack transpilation.
@@ -96,6 +98,8 @@ One TanStack Query client is created above the router in `bootstrap.tsx`, preser
 | `features/service-health` | Service status UI and its behavior tests.                                       |
 
 Components call `useTypedQuery` with a registered GET endpoint. `ApiQueries` in `@ordo/contracts` associates each endpoint with its parameters and response; the host catalog supplies its URL builder and runtime decoder. Responses enter as `unknown` and are validated before success. Query cancellation reaches `fetch` through `AbortSignal`.
+
+The API also imports `ServiceHealthResponse` from `@ordo/contracts` to type the health route's Express response. Both sides check the same response contract at compile time; the frontend decoder still validates the actual JSON at runtime.
 
 ```tsx
 const health = useTypedQuery('serviceHealth');
