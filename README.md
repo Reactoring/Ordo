@@ -4,7 +4,7 @@ ORDO helps independent professionals collect purchase documents, review extracte
 
 ## Status
 
-The local application supports import, PDF text extraction, review, and saved corrections. The Documents screen accepts PDF, PNG, and JPEG files through selection or drag-and-drop and provides file-name search. Each document opens in the federated Review module with its original beside an editable form. Validating saves the corrected fields and updates the collection's review status. Originals, extraction results, and corrections survive reloads and API restarts. OCR and export are not implemented yet.
+The local application supports import, PDF text extraction, local OCR, review, and saved corrections. The Documents screen accepts PDF, PNG, and JPEG files through selection or drag-and-drop and provides file-name search. Each document opens in the federated Review module with its original beside an editable form. Validating saves the corrected fields and updates the collection's review status. Originals, extraction results, and corrections survive reloads and API restarts. Export is not implemented yet.
 
 ## First release
 
@@ -22,11 +22,15 @@ Processing failures will remain isolated per document. File hashes will identify
 
 The backend uses PDF.js for embedded PDF text and TypeScript rules for field extraction. New imports are processed before the import response returns. PDF extraction reads up to 20 pages and 100,000 characters; supported English and French labels identify supplier, reference, invoice date, currency, subtotal, tax, and total. Amounts are stored as integer cents. Ambiguous or missing values remain empty, and missing amounts are never calculated from other extracted fields. EUR, USD, and GBP are currently supported.
 
-Images, PDFs without embedded text, and documents beyond the extraction limits require manual entry. An unreadable PDF is still saved and does not stop other files in the batch. Tesseract.js OCR is a later step; no LLM service is required.
+Tesseract.js reads PNG/JPEG images locally using installed English and French models. PDF.js renders pages with fewer than 40 non-whitespace text characters before OCR; mixed PDFs can use both readers. OCR line positions reunite labels with right-aligned amounts before applying the field rules. Simple receipts with an `RCPT` reference can also suggest their merchant header and date. No document is sent to an external service and no LLM is required.
+
+OCR accepts images up to 32 megapixels, normalizes them to at most 4 megapixels and 2,400 pixels per side, and reads at most five scanned pages per PDF. One OCR worker runs at a time, with up to six active or waiting jobs; recognition has a 30-second deadline per image. Workers are terminated after each job. Language files come from pinned npm packages and are copied into a private temporary directory, removed after processing; there is no runtime model download. `@napi-rs/canvas` supplies the native image decoder and PDF render surface.
+
+Unreadable or oversized documents remain available for manual entry without blocking the rest of a batch. The extraction outcome records `pdf_text`, `ocr`, or `mixed` when available. Earlier, untouched manual imports receive one OCR attempt when opened; completed OCR and reviewed documents are preserved.
 
 Extracted values require human review; missing values remain empty. Arithmetic checks are review aids, not accounting or tax guarantees.
 
-Automatic extraction targets selected invoice layouts. Images and scanned PDFs can already be reviewed through manual entry; their automatic processing and detailed line items are later extensions.
+Automatic extraction targets simple printed invoices and receipts. Blurred photos, handwriting, complex tables, and unfamiliar layouts may need manual correction. Detailed line items are a later extension.
 
 ### Import and local persistence
 
@@ -50,7 +54,7 @@ This repository is a pnpm monorepo. **Applications** run independently; **packag
 | -------------------- | ---------------------------------------------------------------------------------------------- |
 | `apps/host`          | React application shell, navigation, and the document collection workflow.                     |
 | `apps/review`        | Review microfrontend with its own development server and build; exposes `review/ReviewModule`. |
-| `apps/api`           | Express API for imports, PDF extraction, review persistence, listing, and original access.     |
+| `apps/api`           | Express API for imports, PDF/OCR extraction, review persistence, listing, and original access. |
 | `packages/contracts` | Framework-independent types for review props, API query parameters, and responses.             |
 | `packages/ui`        | Shared React components, button variants, styles, and locally bundled fonts.                   |
 | `config`             | Common Webpack configuration and HTML template used by both frontends.                         |
@@ -156,7 +160,7 @@ Keys follow `['api', endpoint, params]`, separating endpoint and parameter combi
 - Node.js and Express
 - pnpm workspaces with a committed lockfile
 
-PDF.js handles embedded PDF text in the API. Redux Toolkit and Tesseract.js will accompany the features that need them. Azure Pipelines and Azure hosting are planned; backend hosting depends on OCR runtime requirements. Deployment is not configured yet.
+PDF.js and Tesseract.js handle document reading in the API. Redux Toolkit will accompany a feature that needs it. Azure Pipelines and Azure hosting are planned; the API deployment must include its OCR models and a compatible native canvas package. Deployment is not configured yet.
 
 ## Development
 
@@ -176,7 +180,7 @@ pnpm dev
 
 Use **Add documents** or drop files onto the import card. Each selection accepts up to five PDF/PNG/JPEG files, 10 MB each. The collection displays image previews and a PDF placeholder; **Open original** opens the saved file in a new tab. Reimporting identical bytes reports a duplicate. File-name search applies to all documents; file-format filters are not part of the interface.
 
-Select **Review** on a card or **Open review** in the summary to open the next unreviewed document. Earlier imports are prepared on first opening. Check or complete the form, then select **Save and validate**. The card becomes **Reviewed** and can be reopened with **View details**. Images and scanned PDFs show a manual-entry explanation instead of invented fields. The original preview uses the browser's PDF viewer or an image; a new-tab link remains available if the browser cannot display it inline. Unsaved edits stay in the current form and are discarded when leaving the page.
+Select **Review** on a card or **Open review** in the summary to open the next unreviewed document. Earlier imports are prepared on first opening. Check or complete the form, then select **Save and validate**. The card becomes **Reviewed** and can be reopened with **View details**. Images and scanned PDFs show OCR suggestions with a reminder to check them, or a manual-entry explanation when reading fails. The original preview uses the browser's PDF viewer or an image; a new-tab link remains available if the browser cannot display it inline. Unsaved edits stay in the current form and are discarded when leaving the page.
 
 The host proxies `/api` to the backend. Development servers bind to loopback by default.
 

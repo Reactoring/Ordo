@@ -36,21 +36,32 @@ export function parseInvoiceText(text: string): DocumentFields {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
-  function values<T>(label: RegExp, parse: (value: string) => T | null) {
+  function values<T>(label: RegExp, parse: (value: string) => T | null, fallback: T | null = null) {
     const candidates: T[] = [];
+    let matched = false;
     lines.forEach((line, index) => {
       const match = label.exec(line);
       if (!match) return;
+      matched = true;
       const raw = match[1]?.trim() || lines[index + 1] || '';
       const value = parse(raw);
       if (value !== null) candidates.push(value);
     });
-    return unique(candidates);
+    return matched ? unique(candidates) : fallback;
   }
   const currencies: DocumentCurrency[] = [];
   if (/\bEUR\b|€/i.test(text)) currencies.push('EUR');
   if (/\bUSD\b/i.test(text)) currencies.push('USD');
   if (/\bGBP\b|£/i.test(text)) currencies.push('GBP');
+  const receiptReference = values(/^(RCPT[-\w./]*\d[-\w./]*)$/i, (value) => value);
+  const receiptHeader = lines[0];
+  const receiptSupplier =
+    receiptReference &&
+    receiptHeader &&
+    /^[\p{L}][\p{L}\s&.'-]{1,100}$/u.test(receiptHeader) &&
+    !/\b(?:receipt|ticket|invoice|facture)\b/i.test(receiptHeader)
+      ? receiptHeader
+      : null;
   return {
     ...emptyDocumentFields(),
     supplier: values(
@@ -62,14 +73,19 @@ export function parseInvoiceText(text: string): DocumentFields {
         !/^(?:bill to|client|invoice|facture)\b/i.test(value)
           ? value
           : null,
+      receiptSupplier,
     ),
     invoiceNumber: values(
-      /^(?:invoice(?:\s+(?:number|no\.?))?|facture(?:\s*(?:n[°oº.]|num[eé]ro))?|reference|r[eé]f[eé]rence)\s*[:#]?\s*(.*)$/i,
+      /^(?:invoice(?:\s+(?:number|no\.?))?|receipt(?:\s+(?:number|no\.?))?|facture(?:\s*(?:n[°oº.]|num[eé]ro))?|reference|r[eé]f[eé]rence)\s*[:#]?\s*(.*)$/i,
       (value) => (/^(?=.*\d)[a-z\d./_-]{2,80}$/i.test(value) ? value : null),
+      receiptReference,
     ),
     invoiceDate: values(
       /^(?:issued|invoice date|date(?: de facture)?|[eé]mise? le)\s*:?\s*(.*)$/i,
       dateValue,
+      receiptReference
+        ? values(/^((?:\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})(?:\s+\d{2}:\d{2})?)$/, dateValue)
+        : null,
     ),
     currency: unique(currencies),
     subtotalCents: values(

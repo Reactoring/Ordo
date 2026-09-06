@@ -4,6 +4,8 @@ packages:
 
 allowBuilds:
   esbuild: true
+  # Its postinstall only prints a funding message; OCR needs no build script.
+  tesseract.js: false
 
 strictPeerDependencies: true
 verifyDepsBeforeRun: error

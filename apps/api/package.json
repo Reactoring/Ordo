@@ -10,11 +10,16 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@napi-rs/canvas": "1.0.8",
     "@ordo/contracts": "workspace:*",
+    "@tesseract.js-data/eng": "1.0.0",
+    "@tesseract.js-data/fra": "1.0.0",
     "express": "5.2.1",
     "file-type": "22.0.2",
+    "image-size": "2.0.2",
     "multer": "2.3.0",
-    "pdfjs-dist": "6.3.289"
+    "pdfjs-dist": "6.3.289",
+    "tesseract.js": "7.0.0"
   },
   "devDependencies": {
     "@types/express": "5.0.6",

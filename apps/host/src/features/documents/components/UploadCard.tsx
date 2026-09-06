@@ -90,7 +90,9 @@ export function UploadCard({
         </p>
       ) : null}
       <p role="status" className="mt-3 max-w-sm text-sm text-plum-700">
-        {isPending ? 'Saving your documents…' : (summary ?? '')}
+        {isPending
+          ? 'Saving and reading your documents. Scans may take a little longer…'
+          : (summary ?? '')}
       </p>
     </section>
   );

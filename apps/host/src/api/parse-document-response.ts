@@ -103,6 +103,10 @@ export function parseDocumentResponse(value: unknown): DocumentResponse {
       extraction.status !== 'manual' &&
       extraction.status !== 'failed') ||
     (extraction.message !== null && typeof extraction.message !== 'string') ||
+    (extraction.method !== undefined &&
+      extraction.method !== 'pdf_text' &&
+      extraction.method !== 'ocr' &&
+      extraction.method !== 'mixed') ||
     typeof revision !== 'number' ||
     !Number.isSafeInteger(revision) ||
     revision < 0 ||
@@ -116,7 +120,11 @@ export function parseDocumentResponse(value: unknown): DocumentResponse {
       ...metadata,
       revision,
       reviewedAt,
-      extraction: { status: extraction.status, message: extraction.message },
+      extraction: {
+        status: extraction.status,
+        message: extraction.message,
+        ...(extraction.method ? { method: extraction.method } : {}),
+      },
       fields: {
         supplier: fields.supplier,
         invoiceNumber: fields.invoiceNumber,

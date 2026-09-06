@@ -66,6 +66,27 @@ function sendFiles(files: { name: string; bytes: Uint8Array; type?: string }[]) 
 }
 
 describe('document import API', () => {
+  it('persists real OCR results and reuses them on later extraction requests', async () => {
+    const bytes = await readFile(
+      new URL('../../../../tests/fixtures/ocr-receipt.jpg', import.meta.url),
+    );
+    const response = await sendFiles([{ name: 'receipt.jpg', bytes, type: 'image/jpeg' }]);
+    expect(response.status).toBe(201);
+    const imported: UploadDocumentsResponse = await response.json();
+    const id = imported.results[0]?.document.id;
+    await stopServer();
+    await startServer();
+    const details: DocumentResponse = await (await fetch(`${baseUrl}/api/documents/${id}`)).json();
+    expect(details.document).toMatchObject({
+      status: 'needs_review',
+      revision: 1,
+      extraction: { status: 'extracted', method: 'ocr' },
+      fields: { supplier: 'PAPER CORNER', totalCents: 1512 },
+    });
+    expect(
+      await (await fetch(`${baseUrl}/api/documents/${id}/extract`, { method: 'POST' })).json(),
+    ).toEqual(details);
+  }, 20_000);
   it('extracts embedded PDF text and persists review fields across restarts', async () => {
     const bytes = createTextPdf([
       'Supplier: Cedar Workspace',

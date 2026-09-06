@@ -24,6 +24,7 @@ export interface DocumentFields {
 export interface DocumentExtraction {
   status: 'pending' | 'extracted' | 'manual' | 'failed';
   message: string | null;
+  method?: 'pdf_text' | 'ocr' | 'mixed';
 }
 
 export interface DocumentDetails extends UploadedDocument {

@@ -88,6 +88,10 @@ export function parseStoredDocument(value: unknown, id: string): DocumentDetails
     throw new Error(`Invalid stored document details: ${id}`);
   }
   const status = value.extraction.status;
+  const method = value.extraction.method;
+  if (method !== undefined && method !== 'pdf_text' && method !== 'ocr' && method !== 'mixed') {
+    throw new Error(`Invalid extraction method: ${id}`);
+  }
   if (
     status !== 'pending' &&
     status !== 'extracted' &&
@@ -96,12 +100,20 @@ export function parseStoredDocument(value: unknown, id: string): DocumentDetails
   ) {
     throw new Error(`Invalid extraction status: ${id}`);
   }
+  // Give untouched imports from before OCR one opportunity to use the new reader.
+  const needsOcr =
+    metadata.status === 'needs_review' &&
+    status === 'manual' &&
+    method === undefined &&
+    Object.values(value.fields).every((field) => field === null);
   return {
     ...metadata,
     fields: value.fields,
     revision: value.revision,
     reviewedAt: value.reviewedAt,
-    extraction: { status, message: value.extraction.message },
+    extraction: needsOcr
+      ? { status: 'pending', message: null }
+      : { status, message: value.extraction.message, ...(method ? { method } : {}) },
   };
 }
 

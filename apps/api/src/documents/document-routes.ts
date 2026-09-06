@@ -10,7 +10,7 @@ import { DocumentConflictError, documentIdPattern, type DocumentStore } from './
 import { uploadLimits, UploadValidationError, validateUpload } from './validate-upload.js';
 import { documentSummary } from './document-data.js';
 import { createDocumentProcessor } from './extraction/process-document.js';
-import type { PdfTextReader } from './extraction/read-pdf-text.js';
+import type { DocumentTextReader } from './extraction/read-document-text.js';
 import { ReviewValidationError, validateReviewInput } from './validate-review.js';
 
 const upload = multer({
@@ -23,7 +23,7 @@ const upload = multer({
   },
 }).array('files', uploadLimits.maxFiles);
 
-export function createDocumentRouter(store: DocumentStore, readText?: PdfTextReader) {
+export function createDocumentRouter(store: DocumentStore, readText?: DocumentTextReader) {
   const router = Router();
   const processDocument = createDocumentProcessor(store, readText);
   router.get('/', async (_request, response: Response<DocumentsResponse>) => {

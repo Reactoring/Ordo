@@ -2,6 +2,22 @@ import { describe, expect, it } from 'vitest';
 import { parseInvoiceText } from './parse-invoice.js';
 
 describe('invoice field extraction', () => {
+  it('reads a receipt header and date only when a receipt reference is present', () => {
+    expect(parseInvoiceText('PAPER CORNER\nRCPT-2026-0401\n2026-09-04 09:18')).toMatchObject({
+      supplier: 'PAPER CORNER',
+      invoiceNumber: 'RCPT-2026-0401',
+      invoiceDate: '2026-09-04',
+    });
+    expect(parseInvoiceText('PAPER CORNER\n2026-09-04 09:18')).toMatchObject({
+      supplier: null,
+      invoiceDate: null,
+    });
+    expect(
+      parseInvoiceText(
+        'PAPER CORNER\nRCPT-1\nSupplier: Company A\nSupplier: Company B\nDate: 2026-02-30\n2026-09-04',
+      ),
+    ).toMatchObject({ supplier: null, invoiceDate: null });
+  });
   it('does not mistake a supplier name beginning with a label for a labelled field', () => {
     expect(parseInvoiceText('Fromage Example\nSupplierware Ltd').supplier).toBeNull();
   });
