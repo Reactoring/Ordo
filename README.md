@@ -4,7 +4,7 @@ ORDO helps independent professionals collect purchase documents, review extracte
 
 ## Status
 
-The local foundation includes a federated review module, URL navigation, and a cached API health request. The responsive Documents screen opens with five clearly labeled example invoices, local search and status filters, and an empty workspace preview. The import control is disabled: uploads, extraction, editing, and export are not implemented yet.
+The local foundation includes a federated review module, URL navigation, and a cached API health request. The API supports persistent document imports. The Documents screen still shows example invoices while its import control is being connected. Extraction, editing, and export are not implemented yet.
 
 ## First release
 
@@ -26,6 +26,16 @@ Extracted values require human review; missing values remain empty. Arithmetic c
 
 The first release targets selected invoice layouts. Scanned PDFs, arbitrary receipt layouts, and detailed line items are later extensions.
 
+### Import and local persistence
+
+`POST /api/documents` accepts a multipart `files` field with up to five files, 10 MB each. The API checks PDF/PNG/JPEG signatures and matching extensions before storing the selection. Signature checks identify the format; they do not guarantee a document can be parsed by the future extraction stage. `GET /api/documents` returns the collection and upload limits, and `GET /api/documents/:id/content` serves an original file.
+
+Each document has its own directory under `apps/api/.data/documents`, containing `original` and `document.json`. The metadata currently records the name, format, size, upload date, and `uploaded` status; extracted fields will be added with processing. `DATA_DIR` overrides the storage directory. Originals and metadata survive page reloads and API restarts and are ignored by Git.
+
+The API depends on a `DocumentStore` interface. Its local implementation identifies exact duplicates by SHA-256, writes both files into a temporary directory, then publishes the complete directory by renaming it. Concurrent identical uploads keep the first complete document. Validation rejects an invalid selection before any writes; an unexpected storage failure may leave earlier documents in a batch imported, so retrying safely reuses them. Interrupted staging directories are ignored by the collection.
+
+JSON storage is intended for this small local workspace. Azure deployment will require durable storage behind the same interface; the API container's filesystem is not the planned persistent store.
+
 ## Architecture
 
 This repository is a pnpm monorepo. **Applications** run independently; **packages** provide reusable code consumed by those applications.
@@ -34,7 +44,7 @@ This repository is a pnpm monorepo. **Applications** run independently; **packag
 | -------------------- | ---------------------------------------------------------------------------------------------- |
 | `apps/host`          | React application shell, navigation, and the document collection workflow.                     |
 | `apps/review`        | Review microfrontend with its own development server and build; exposes `review/ReviewModule`. |
-| `apps/api`           | Express application and HTTP server; currently provides `GET /api/health`.                     |
+| `apps/api`           | Express API for health, document imports, listing, and original file access.                   |
 | `packages/contracts` | Framework-independent types for review props, API query parameters, and responses.             |
 | `packages/ui`        | Shared React components, button variants, styles, and locally bundled fonts.                   |
 | `config`             | Common Webpack configuration and HTML template used by both frontends.                         |
