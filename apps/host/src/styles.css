@@ -1,0 +1,5 @@
+@reference '@ordo/ui/theme.css';
+@import 'tailwindcss/utilities.css' layer(utilities) source(none);
+
+@source './';
+@source '../../../packages/ui/src';

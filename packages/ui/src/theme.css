@@ -1,11 +1,11 @@
+@layer theme, base, components, utilities;
+
 @import '@fontsource/dm-sans/latin-400.css';
 @import '@fontsource/dm-sans/latin-600.css';
-@import 'tailwindcss' source(none);
+@import 'tailwindcss/theme.css' layer(theme) theme(static);
+@import 'tailwindcss/preflight.css' layer(base);
 
-@source '../../../apps';
-@source './';
-
-@theme {
+@theme static {
   --font-sans: 'DM Sans', sans-serif;
   --color-plum-50: #f5f0fb;
   --color-plum-100: #e9ddf5;

@@ -44,7 +44,9 @@ Each workspace has its own `package.json`. pnpm links `"@ordo/ui": "workspace:*"
 
 `@ordo/ui` exports buttons, badges, filter chips, icons, empty states, and a shared application shell. `Button` supports primary, secondary, and ghost variants, two sizes, native button props, and `type="button"` by default. Navigation links use the same appearance through `buttonClassName`, keeping the UI package independent of React Router.
 
-Components use Tailwind utilities. `packages/ui/src/styles.css` contains Tailwind imports, shared theme tokens, source directories, and base styles. Both frontends scan application and UI-package sources so the same utilities are available in the host and standalone review build.
+Components use Tailwind utilities. `@ordo/ui/theme.css` provides fonts, Preflight, theme tokens, and base styles. Only the document owner imports it: the host bootstrap or Review's standalone bootstrap. Theme variables use `static` so they remain available to independently compiled utilities.
+
+Each frontend's `src/styles.css` references the theme without emitting it and generates utilities from its own sources and `packages/ui/src`. Review nests its utility selectors under `.ordo-review`, used by the exposed module and standalone page. Its utilities cannot restyle the host when the remote loads, including after returning to Documents. The exposed module does not inject another theme, reset, or set of fonts. Both applications still rely on compatible shared theme tokens; this is selector scoping, not full CSS isolation.
 
 ### How the microfrontend loads
 

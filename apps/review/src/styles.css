@@ -1,0 +1,10 @@
+@reference '@ordo/ui/theme.css';
+
+@layer utilities {
+  .ordo-review {
+    @tailwind utilities source(none);
+  }
+}
+
+@source './';
+@source '../../../packages/ui/src';
