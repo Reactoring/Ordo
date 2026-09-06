@@ -2,6 +2,10 @@
 
 ORDO is a local purchase-document workspace. Import invoices and receipts, check extracted information against the original, and save reviewed documents. PDF text extraction and image OCR run in the Node.js API; no external AI service is required.
 
+## Purpose and scope
+
+ORDO is a personal project exploring React microfrontends with Webpack Module Federation through a concrete document-review workflow. It prioritizes frontend architecture and user experience, with deliberately limited product and infrastructure complexity. Azure deployment and CI/CD are planned for a later stage.
+
 ## Run locally
 
 Use Node.js **22.22+ in the 22.x line** or **24.19+ in the 24.x line**, and **pnpm 11.19.0**.
@@ -27,7 +31,15 @@ The development servers bind to loopback. Both `localhost` and `127.0.0.1` work.
 3. Open a card to compare the original with editable supplier, reference, date, currency, subtotal, tax, and total fields. Suggested values always require review.
 4. **Save and return** validates the document and returns to Reviewed with a confirmation. **Open review** in the summary starts a queue: **Save and next** opens the next unreviewed document, while **Save and finish** returns to the list. A confirmation identifies the saved and next filenames.
 
-Originals and saved corrections survive reloads and API restarts. Failed saves keep the current draft. Unsaved edits are discarded when leaving the review page. Documents that cannot be read automatically remain available for manual entry.
+Originals and saved corrections survive reloads and API restarts. Failed saves keep the current draft, and documents that cannot be read automatically remain available for manual entry.
+
+## Design decisions
+
+- **A microfrontend for a small app:** separating Review provides a practical way to explore runtime composition and a boundary checked through typed props and integration tests. Separate builds and compatible releases add coordination that this application's size alone would not justify.
+- **Local JSON storage:** one API process keeps setup simple, while the `DocumentStore` interface allows another persistence implementation later. This choice accepts the absence of shared storage and coordination across multiple API processes.
+- **Parsing rules instead of an LLM:** PDF extraction, local OCR, and explicit rules keep processing inspectable and avoid external services. Coverage is narrower, so ambiguous or missing values require human input.
+- **Shared types and runtime guards:** `packages/contracts` provides compile-time contracts and common validation rules for the host and API. It is not type-only: avoiding duplicated guards requires a JavaScript build consumed by both applications.
+- **Scoped Tailwind utilities:** Review generates its utilities under `.ordo-review` to avoid changing host styles when loaded. This provides selector isolation, while both applications still need compatible shared theme tokens.
 
 ## Architecture
 
@@ -58,15 +70,7 @@ flowchart LR
     UI -.->|"Included at build time"| Review
 ```
 
-Webpack Module Federation loads Review at runtime:
-
-1. `apps/review/webpack.config.cjs` exposes `ReviewModule` through `remoteEntry.js`.
-2. The host maps `review` to the remote URL and loads `review/ReviewModule` with `React.lazy`.
-3. The host passes document data, the original file URL, and typed save/close callbacks. `Suspense` covers loading; `RemoteBoundary` provides recovery if the remote fails.
-
-The host composes its collection and navigation with the independently built Review interface. This is the composite UI; `packages/ui` supplies the shared visual building blocks. React and React DOM are shared singletons, initialized through each application's asynchronous `index.ts` → `bootstrap.tsx` entry.
-
-`DocumentReviewProps` and `ReviewModuleProps` in `packages/contracts/src/review.ts` define the integration. Review owns no router, query client, or API transport. Its `onSave` callback resolves with the persisted document or rejects with an error. Optional save labels explain the host's next action without exposing routing logic to the microfrontend. Public types check compatibility at compile time; compatible deployments are still required at runtime.
+The host loads `review/ReviewModule` from Review's `remoteEntry.js` with `React.lazy` and composes it with its shell and navigation. `ReviewModuleProps` in `packages/contracts/src/review.ts` defines the document data, original URL, and callbacks passed to Review; `onSave` returns the persisted document, while `onClose` delegates navigation to the host. `Suspense` handles loading and `RemoteBoundary` provides failure recovery. Module Federation shares React and React DOM as singletons through each app's asynchronous `index.ts` → `bootstrap.tsx` entry.
 
 ### State and responsibility boundaries
 
@@ -86,25 +90,17 @@ The API's `createApp` selects the concrete store and document reader. Processing
 
 Components use Tailwind utilities. `packages/ui/src/theme.css` supplies theme tokens, base styles, Preflight, and bundled fonts. Only the host bootstrap or Review's standalone bootstrap imports that global theme.
 
-Each app generates utilities from its own sources and the shared UI package. The exposed Review module scopes its utilities under `.ordo-review`, preventing its generated selectors from restyling the host. This is CSS selector scoping; both applications still depend on compatible theme tokens.
+Each app generates utilities from its own sources and the shared UI package.
 
 `TextField` and `SelectField` associate labels, hints, and errors with native controls and accept React Hook Form registration. Buttons and link styles share the same visual variants without introducing a router dependency into the UI package.
 
 ## Typed requests and cache
 
-The host creates one TanStack Query client above React Router, preserving its cache across navigation. `ApiQueries` and `ApiMutations` live together in `apps/host/src/api/schema.ts`: they describe the frontend's endpoint names, parameters, variables, and responses using shared contract types. The host's endpoint catalog supplies URL builders and runtime decoders: HTTP JSON enters as `unknown` and is checked before reaching the cache.
+The host provides one TanStack Query client above React Router. `ApiQueries` and `ApiMutations` in `apps/host/src/api/schema.ts` associate endpoint names with their inputs and responses; runtime decoders validate HTTP JSON before it enters the cache.
 
 ### Reading documents with `useTypedQuery`
 
-Inside a component or feature hook, load the collection without parameters:
-
-```tsx
-const collection = useTypedQuery('documents');
-// collection.data: DocumentsResponse | undefined
-// collection.data?.documents: UploadedDocument[] | undefined
-```
-
-For a selected `documentId: string`, request its details and select the document from the response:
+Inside a component or feature hook, load a document by its `documentId: string`:
 
 ```tsx
 const details = useTypedQuery(
@@ -115,31 +111,18 @@ const details = useTypedQuery(
   },
 );
 // details.data: DocumentDetails | undefined
-// details.data?.fields.totalCents: number | null | undefined
 ```
 
-Endpoint names, required parameters, responses, and `select` results are inferred. An unknown endpoint, a missing document ID, or a numeric ID causes a TypeScript error. The hook retains TanStack Query options such as `enabled` and `staleTime` while owning the cache key, request function, and response decoding. `select` transforms the observer's result; the cache keeps the full endpoint response.
-
-`getTypedQueryOptions` provides the same typed keys and requests outside hooks:
-
-```ts
-await queryClient.prefetchQuery(getTypedQueryOptions('document', { id: documentId }));
-
-await queryClient.invalidateQueries({
-  queryKey: getTypedQueryOptions('documents').queryKey,
-});
-```
-
-Keys follow `['api', endpoint, params]`. Data is fresh for 30 seconds; inactive entries expire after five minutes. Stale queries refetch on mount, window focus, or reconnection. Network and HTTP 5xx failures retry once; HTTP 4xx and invalid payloads do not. Cancellation reaches `fetch` through `AbortSignal`. This memory cache is separate from the API's persistent storage.
+Endpoint names, required parameters, responses, and `select` results are inferred. `select` changes the value exposed to the component; the cache retains the full response.
 
 ### Saving through `useTypedMutation`
 
-The mutation catalog associates `uploadDocuments`, `extractDocument`, and `reviewDocument` with typed variables and decoded responses. For example, within a feature hook:
+Create the mutation in a feature hook, then submit the displayed revision and corrected fields from the save handler:
 
 ```tsx
 const review = useTypedMutation('reviewDocument');
 
-// In the save handler, using the displayed revision and corrected DocumentFields:
+// In the save handler:
 const result = await review.mutateAsync({
   id: documentId,
   input: { revision, fields: correctedFields },
@@ -147,9 +130,9 @@ const result = await review.mutateAsync({
 // result.document: DocumentDetails
 ```
 
-Mutations do not retry automatically by default. Feature hooks supply cache updates: `useDocumentReview` publishes returned details without replacing a newer revision, updates the collection's status, and invalidates its query. `useReviewFlow` decides whether to return to the list or continue the queue. A failed queue refresh does not report a successful save as a failure.
+After saving, feature hooks update the cached document and refresh the collection; the host decides whether to return to the list or continue the review queue.
 
-`useDocumentUpload` sends multipart files and refreshes the collection after both success and failure, since a storage failure can occur after earlier files were saved. Successful imports clear filters so the new documents are visible.
+Query data stays fresh for 30 seconds and inactive entries expire after five minutes; this memory cache is separate from persisted JSON. Stale queries refetch on mount, window focus, or reconnection; network and HTTP 5xx query failures retry once, while mutations do not retry automatically by default.
 
 ## API and persistence
 
@@ -166,7 +149,7 @@ Mutations do not retry automatically by default. Feature hooks supply cache upda
 
 Amounts are integer cents. Required fields, real calendar dates, supported currencies (EUR/USD/GBP), and matching subtotal + tax = total are checked by the API. These checks help review; they do not establish accounting or tax compliance.
 
-The store supports one local workspace and one API process. Data and temporary files are ignored by Git. Test fixtures are fictional and are not loaded by the running application.
+Data and temporary files are ignored by Git. Test fixtures are fictional and are not loaded by the running application.
 
 Original file URLs include their content hash and never change their bytes. Responses allow private browser caching for one year with `immutable`, so card previews and review pages can reuse the same file. This policy applies only to originals, not editable metadata. Revisit browser cache lifetime if access control or document removal is introduced.
 
@@ -183,9 +166,17 @@ PDF.js first reads embedded PDF text. Pages with fewer than 40 non-whitespace ch
 | OCR concurrency                   | One worker; up to six active or waiting jobs   |
 | Recognition deadline              | 30 seconds per image                           |
 
-Imports wait for processing before returning. Simultaneous requests for the same pending document share one reader job. Each OCR worker is released after its job, including on timeout. Installed language models are copied lazily into one temporary directory per API process and reused across jobs; normal process shutdown removes that directory. Failed preparation can be retried. Images and scanned PDFs share rendering limits. A review saved during extraction takes precedence over the extraction result.
+Imports wait for processing before returning. Simultaneous requests for the same pending document share one reader job. Each OCR worker is released after its job, including on timeout. Installed language models are copied lazily into one temporary directory per API process and reused across jobs; normal process shutdown removes that directory. A model preparation failure does not prevent later jobs from trying to initialize the models. Images and scanned PDFs share rendering limits. A review saved during extraction takes precedence over the extraction result.
 
-The parser supports simple printed invoices and receipts with English or French labels. Missing or ambiguous values stay empty; missing amounts are never derived from other fields. Limits and unreadable documents lead to manual review. Blurred photos, handwriting, and complex layouts may require corrections.
+Missing or ambiguous values stay empty; missing amounts are never derived from other fields. Limits and unreadable documents lead to manual review.
+
+## Known limitations
+
+- The parser targets simple printed invoices and receipts with English or French labels. Blurred photos, handwriting, and complex layouts are not reliably supported.
+- The application supports one user and one API process, with no authentication or coordination between multiple API processes.
+- Recorded OCR failures, including transient timeouts or a busy worker, are not retried when reopening or reimporting the document. Manual entry remains available.
+- Unsaved edits are lost when leaving the review page; drafts are not persisted.
+- Document deletion is not implemented.
 
 ## Checks and deployment
 
