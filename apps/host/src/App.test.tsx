@@ -5,13 +5,18 @@ import { MemoryRouter, useLocation } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { createQueryClient } from './app/query-client';
+import { documentsResponse } from '../../../tests/fixtures/documents';
 
 let client: QueryClient;
 const fetch = vi.fn<typeof globalThis.fetch>();
 
 beforeEach(() => {
   client = createQueryClient();
-  fetch.mockReset().mockImplementation(async () => Response.json({ status: 'ok' }));
+  fetch
+    .mockReset()
+    .mockImplementation(async (url) =>
+      Response.json(url === '/api/documents' ? documentsResponse() : { status: 'ok' }),
+    );
   vi.stubGlobal('fetch', fetch);
 });
 
@@ -53,7 +58,7 @@ describe('workspace navigation', () => {
     expect(await screen.findByRole('heading', { name: 'Documents, in order.' })).toBeVisible();
     expect(screen.getByLabelText('Current path')).toHaveTextContent('/documents');
     expect(screen.getByText('Document service available')).toBeVisible();
-    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledTimes(2);
   });
 
   it('opens a direct review URL and returns to documents without requiring previous history', async () => {

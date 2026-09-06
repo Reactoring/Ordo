@@ -15,11 +15,13 @@ export function ReviewSummary({ count }: { count: number }) {
       </div>
       <div className="flex-1">
         <h2 className="text-sm font-semibold">
-          {count > 0 ? `${count} examples need a closer look` : 'Ready for a fresh start.'}
+          {count > 0
+            ? `${count} ${count === 1 ? 'document' : 'documents'} collected`
+            : 'Ready for a fresh start.'}
         </h2>
         <p className="mt-1 text-xs leading-5 text-muted">
           {count > 0
-            ? 'A few details to check. Then you’re all set.'
+            ? 'Your originals, saved together and ready to open.'
             : 'Collect your invoices, then review the details.'}
         </p>
         <Link

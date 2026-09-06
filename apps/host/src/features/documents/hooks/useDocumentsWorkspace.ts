@@ -1,45 +1,30 @@
 import { useState } from 'react';
-import { exampleDocuments } from '../data/example-documents';
+import { useTypedQuery } from '../../../hooks/useTypedQuery';
 import type { DocumentFilter } from '../document.types';
+import { filterDocuments } from '../filter-documents';
 
 export function useDocumentsWorkspace() {
-  const [showExamples, setShowExamples] = useState(true);
+  const query = useTypedQuery('documents');
   const [filter, setFilter] = useState<DocumentFilter>('all');
   const [search, setSearch] = useState('');
-  const documents = showExamples ? exampleDocuments : [];
+  const documents = query.data?.documents ?? [];
   const counts = {
     all: documents.length,
-    'needs-review': documents.filter((document) => document.status === 'needs-review').length,
-    reviewed: documents.filter((document) => document.status === 'reviewed').length,
+    PDF: documents.filter((document) => document.fileType === 'PDF').length,
+    images: documents.filter((document) => document.fileType !== 'PDF').length,
   };
-  const searchTerm = search.trim().toLowerCase();
-  const visibleDocuments = documents.filter((document) => {
-    const matchesStatus = filter === 'all' || document.status === filter;
-    const matchesSearch = [document.fileName, document.supplier, document.category].some((value) =>
-      value.toLowerCase().includes(searchTerm),
-    );
-    return matchesStatus && matchesSearch;
-  });
-
   function resetFilters() {
     setFilter('all');
     setSearch('');
   }
-
-  function toggleExamples() {
-    setShowExamples((current) => !current);
-    resetFilters();
-  }
-
   return {
-    showExamples,
+    query,
     counts,
     filter,
     setFilter,
     search,
     setSearch,
-    visibleDocuments,
+    visibleDocuments: filterDocuments(documents, filter, search),
     resetFilters,
-    toggleExamples,
   };
 }

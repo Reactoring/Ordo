@@ -4,7 +4,7 @@ ORDO helps independent professionals collect purchase documents, review extracte
 
 ## Status
 
-The local foundation includes a federated review module, URL navigation, and a cached API health request. The API supports persistent document imports. The Documents screen still shows example invoices while its import control is being connected. Extraction, editing, and export are not implemented yet.
+The local application includes a federated review module, URL navigation, and persistent document imports. The Documents screen accepts PDF, PNG, and JPEG files through selection or drag-and-drop, displays saved originals, and supports file-name search and format filters. Files survive page reloads and API restarts. Documents currently have an `uploaded` status; extraction, editing, and export are not implemented yet.
 
 ## First release
 
@@ -104,7 +104,7 @@ One TanStack Query client is created above the router in `bootstrap.tsx`, preser
 | `pages`                   | Route-level screen composition.                                                 |
 | `api`                     | Typed endpoint catalog, query options, JSON transport, and response validation. |
 | `hooks`                   | Shared React hooks, named after their exports, such as `useTypedQuery.ts`.      |
-| `features/documents`      | Document cards, toolbar, example data, and a feature-local workspace hook.      |
+| `features/documents`      | Document cards, filters, selection validation, and import/workspace hooks.      |
 | `features/service-health` | Service status UI and its behavior tests.                                       |
 
 Components call `useTypedQuery` with a registered GET endpoint. `ApiQueries` in `@ordo/contracts` associates each endpoint with its parameters and response; the host catalog supplies its URL builder and runtime decoder. Responses enter as `unknown` and are validated before success. Query cancellation reaches `fetch` through `AbortSignal`.
@@ -129,6 +129,8 @@ Data stays fresh for 30 seconds; inactive cache entries expire after 5 minutes. 
 Keys follow `['api', endpoint, params]`, separating endpoint and parameter combinations. `serviceHealth` and `documents` are registered; new queries require a contract, URL builder, and decoder. TanStack Query owns server state; React owns transient UI state. Review currently makes no API requests and does not consume the host's query client.
 
 `useTypedMutation` follows the same endpoint-based approach for writes. The mutation catalog owns the request and response decoder, while the hook exposes typed variables, results, and callbacks. The upload input uses browser `File` objects, so its variable type lives in the host; response types are shared through `@ordo/contracts`. Uploads use multipart form data and are not retried automatically. Feature hooks own invalidation of affected queries.
+
+`useDocumentUpload` validates the selection, reports upload and duplicate outcomes, and invalidates the document collection after each attempt. This also reveals any files saved before an unexpected batch failure. Successful uploads clear active filters so the imported documents are visible. Example metadata lives only in `tests/fixtures` and is not used by the running application.
 
 ## Stack
 
@@ -160,7 +162,7 @@ pnpm dev
 | Standalone review | http://127.0.0.1:3001            |
 | API health        | http://127.0.0.1:4000/api/health |
 
-Use **Clear examples** and **Show examples** to switch between the populated and empty Documents screen. Filters and search operate on local example data; these illustrations are not uploaded files or extraction results. This preview state resets when the page remounts. Select **Open review** to load the review module's empty state. The host proxies `/api` to the backend. Development servers bind to loopback by default.
+Use **Add documents** or drop files onto the import card. Each selection accepts up to five PDF/PNG/JPEG files, 10 MB each. The page displays image previews and a PDF placeholder; **Open original** opens the saved file in a new tab. Reimporting identical bytes reports a duplicate. Search and PDF/image filters operate on the collection returned by the API. Select **Open review** to load the review module's current empty state. The host proxies `/api` to the backend. Development servers bind to loopback by default.
 
 Both `localhost` and `127.0.0.1` work locally. WebSocket clients follow the page's hostname while retaining their own frontend's port. Cross-origin assets are allowed only for the host's two local origins. Restart `pnpm dev` after changing Webpack configuration, then reload open pages.
 
@@ -173,6 +175,6 @@ pnpm --filter @ordo/review build
 pnpm --filter @ordo/api build
 ```
 
-Build output lives in each application's `dist` directory. `REVIEW_REMOTE_URL` overrides the remote entry URL when building or starting the host; the default is `http://127.0.0.1:3001/remoteEntry.js`. The API accepts `PORT` and `HOST`. Environment variables must be set in the shell; `.env` files are not loaded automatically.
+Build output lives in each application's `dist` directory. `REVIEW_REMOTE_URL` overrides the remote entry URL when building or starting the host; the default is `http://127.0.0.1:3001/remoteEntry.js`. The API accepts `PORT`, `HOST`, and `DATA_DIR`. Environment variables must be set in the shell; `.env` files are not loaded automatically.
 
 Frontends currently expect hosting at the root of their respective origins. Future hosting must serve their assets, allow the host origin through CORS on review assets, route API requests, and provide the deployed review URL. The host needs an SPA fallback for page URLs, excluding assets and `/api`. Nothing is deployed by the development or build commands.

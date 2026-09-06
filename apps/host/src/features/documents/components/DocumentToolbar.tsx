@@ -11,8 +11,8 @@ interface DocumentToolbarProps {
 
 const filters: { value: DocumentFilter; label: string }[] = [
   { value: 'all', label: 'All documents' },
-  { value: 'needs-review', label: 'Needs review' },
-  { value: 'reviewed', label: 'Reviewed' },
+  { value: 'PDF', label: 'PDFs' },
+  { value: 'images', label: 'Images' },
 ];
 
 export function DocumentToolbar({

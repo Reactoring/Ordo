@@ -1,49 +1,35 @@
-import type { DocumentSummary } from '../document.types';
-import { formatDocumentAmount, formatDocumentDate } from '../format-document';
+import { useState } from 'react';
+import type { UploadedDocument } from '@ordo/contracts';
+import { Icon } from '@ordo/ui';
+import { documentContentUrl } from '../format-document';
 
-export function DocumentPreview({ document }: { document: DocumentSummary }) {
+export function DocumentPreview({ document }: { document: UploadedDocument }) {
+  const [unavailable, setUnavailable] = useState(false);
+  const showImage = document.fileType !== 'PDF' && !unavailable;
   return (
     <div
       aria-hidden="true"
-      className="relative h-48 overflow-hidden bg-linear-to-br from-plum-50/70 to-white px-6 pt-5 sm:h-52"
+      className="relative flex h-48 items-center justify-center overflow-hidden bg-linear-to-br from-plum-50/70 to-white p-5 sm:h-52"
     >
-      <span className="absolute top-3 right-3 z-10 rounded-md border border-plum-100 bg-plum-50 px-2 py-1 text-[10px] font-semibold tracking-wide text-plum-700 uppercase">
-        {document.category}
+      <span className="absolute top-3 right-3 z-10 rounded-md border border-plum-100 bg-plum-50 px-2 py-1 text-[10px] font-semibold tracking-wide text-plum-700">
+        {document.fileType}
       </span>
-      <div className="min-h-64 rounded-t-sm border border-line/70 bg-white px-5 py-6 text-[9px] text-ink shadow-paper">
-        <div className="flex items-start justify-between gap-3">
-          <p className="max-w-36 text-sm leading-tight font-semibold tracking-tight">
-            {document.supplier}
-          </p>
-          <div className="pt-3 text-right text-[8px] leading-4">
-            <p className="font-semibold uppercase">Invoice</p>
-            <p>{document.reference}</p>
-            <p className="text-muted">{formatDocumentDate(document.date)}</p>
-          </div>
+      {showImage ? (
+        <img
+          src={documentContentUrl(document.id)}
+          alt=""
+          loading="lazy"
+          onError={() => setUnavailable(true)}
+          className="size-full rounded-sm object-contain"
+        />
+      ) : (
+        <div className="flex h-36 w-28 -rotate-3 flex-col items-center justify-center gap-3 rounded-md border border-line bg-white text-plum-400 shadow-paper">
+          <Icon name="document" className="size-12" />
+          <span className="text-[10px] font-semibold tracking-[0.15em] uppercase">
+            {document.fileType}
+          </span>
         </div>
-        <div className="mt-5 flex gap-14 leading-4">
-          <div>
-            <p className="font-semibold">From</p>
-            <p className="text-muted">{document.supplier}</p>
-          </div>
-          <div>
-            <p className="font-semibold">Bill to</p>
-            <p className="text-muted">Example workspace</p>
-          </div>
-        </div>
-        <div className="mt-5 flex justify-between border-b border-line pb-1.5 font-semibold">
-          <span>Description</span>
-          <span>Amount</span>
-        </div>
-        <div className="flex justify-between gap-2 pt-2">
-          <span>{document.description}</span>
-          <span>{formatDocumentAmount(document)}</span>
-        </div>
-        <div className="mt-4 flex justify-between border-t border-line pt-2 font-semibold">
-          <span>Total</span>
-          <span>{formatDocumentAmount(document)}</span>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

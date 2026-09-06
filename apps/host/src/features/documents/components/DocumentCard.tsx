@@ -1,11 +1,9 @@
-import { Badge, Icon } from '@ordo/ui';
-import type { DocumentSummary } from '../document.types';
-import { formatDocumentAmount, formatDocumentDate } from '../format-document';
+import type { UploadedDocument } from '@ordo/contracts';
+import { Badge, Icon, buttonClassName } from '@ordo/ui';
+import { documentContentUrl, formatFileSize, formatUploadDate } from '../format-document';
 import { DocumentPreview } from './DocumentPreview';
 
-export function DocumentCard({ document }: { document: DocumentSummary }) {
-  const needsReview = document.status === 'needs-review';
-
+export function DocumentCard({ document }: { document: UploadedDocument }) {
   return (
     <article
       aria-labelledby={`document-${document.id}`}
@@ -26,31 +24,30 @@ export function DocumentCard({ document }: { document: DocumentSummary }) {
               {document.fileName}
             </h2>
             <p className="mt-1 text-xs text-muted">
-              {document.category} <span aria-hidden="true">·</span> {document.fileType}
+              {document.fileType} <span aria-hidden="true">·</span>{' '}
+              {formatFileSize(document.sizeBytes)}
             </p>
           </div>
-          <p className="shrink-0 text-sm font-semibold tabular-nums">
-            {formatDocumentAmount(document)}
-          </p>
         </div>
-        <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs">
-          <p className="font-medium text-ink">{document.supplier}</p>
-          <time dateTime={document.date} className="text-muted">
-            {formatDocumentDate(document.date)}
-          </time>
-        </div>
-        <p className="sr-only">Invoice reference: {document.reference}</p>
+        <p className="mt-3 text-xs text-muted">
+          Uploaded{' '}
+          <time dateTime={document.uploadedAt}>{formatUploadDate(document.uploadedAt)}</time>
+        </p>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-          <Badge tone={needsReview ? 'warning' : 'success'}>
-            <Icon name={needsReview ? 'clock' : 'check'} className="size-3.5" />
-            {needsReview ? 'Needs review' : 'Reviewed'}
+          <Badge>
+            <Icon name="check" className="size-3.5" />
+            Uploaded
           </Badge>
-          {needsReview ? (
-            <span className="text-xs text-muted">
-              {document.checksRemaining} {document.checksRemaining === 1 ? 'field' : 'fields'} to
-              check
-            </span>
-          ) : null}
+          <a
+            href={documentContentUrl(document.id)}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Open original ${document.fileName} (new tab)`}
+            className={buttonClassName({ variant: 'ghost', size: 'sm' })}
+          >
+            Open original
+            <Icon name="arrowRight" className="size-4" />
+          </a>
         </div>
       </div>
     </article>
