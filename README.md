@@ -126,7 +126,9 @@ Endpoint parameters are inferred and required when declared. The hook retains op
 
 Data stays fresh for 30 seconds; inactive cache entries expire after 5 minutes. Stale queries refetch on mount, focus, or reconnection. Network and HTTP 5xx failures retry once; HTTP 4xx and invalid responses do not. Cache is memory-only, with no polling.
 
-Keys follow `['api', endpoint, params]`, separating endpoint and parameter combinations. Only `serviceHealth` is registered today; new APIs require a contract, URL builder, and decoder. Future mutations will invalidate affected keys. TanStack Query owns server state; React owns transient UI state. Review currently makes no API requests and does not consume the host's query client.
+Keys follow `['api', endpoint, params]`, separating endpoint and parameter combinations. `serviceHealth` and `documents` are registered; new queries require a contract, URL builder, and decoder. TanStack Query owns server state; React owns transient UI state. Review currently makes no API requests and does not consume the host's query client.
+
+`useTypedMutation` follows the same endpoint-based approach for writes. The mutation catalog owns the request and response decoder, while the hook exposes typed variables, results, and callbacks. The upload input uses browser `File` objects, so its variable type lives in the host; response types are shared through `@ordo/contracts`. Uploads use multipart form data and are not retried automatically. Feature hooks own invalidation of affected queries.
 
 ## Stack
 

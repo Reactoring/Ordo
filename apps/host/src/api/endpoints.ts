@@ -1,7 +1,9 @@
 import type { ApiQueries } from '@ordo/contracts';
 import { createTypedQueryOptions, type QueryEndpoints } from './typed-query-options';
+import { parseDocumentsResponse } from './parse-document-response';
 
 const endpoints: QueryEndpoints<ApiQueries> = {
+  documents: { url: () => '/api/documents', parse: parseDocumentsResponse },
   serviceHealth: {
     url: () => '/api/health',
     parse: (data) => {

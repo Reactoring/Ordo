@@ -36,7 +36,7 @@ export function checkEndpointTypes() {
   // @ts-expect-error Unexpected parameter properties are rejected.
   optionsFor('documents', { page: 1, id: '42' });
 
-  const invalidEndpoints: QueryEndpoints<ApiQueries> = {
+  const invalidEndpoints: QueryEndpoints<Pick<ApiQueries, 'serviceHealth'>> = {
     serviceHealth: {
       url: () => '/api/health',
       // @ts-expect-error The decoder must return the registered response shape.
