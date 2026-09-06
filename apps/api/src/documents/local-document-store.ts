@@ -99,12 +99,6 @@ export class LocalDocumentStore implements DocumentStore {
       reviewedAt: null,
     };
     const staging = path.join(this.directory, `.upload-${randomUUID()}`);
-    if (
-      path.dirname(staging) !== this.directory ||
-      !path.basename(staging).startsWith('.upload-')
-    ) {
-      throw new Error('Invalid staging directory.');
-    }
     await mkdir(staging, { recursive: true });
     try {
       await writeDurably(path.join(staging, 'original'), file.bytes);

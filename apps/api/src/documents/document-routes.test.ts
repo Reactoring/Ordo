@@ -169,7 +169,18 @@ describe('document import API', () => {
     expect(list.documents).toEqual([document]);
     const original = await fetch(`${baseUrl}/api/documents/${document?.id}/content`);
     expect(original.headers.get('content-type')).toContain('image/png');
+    expect(original.headers.get('cache-control')).toBe('private, max-age=31536000, immutable');
     expect(Buffer.from(await original.arrayBuffer())).toEqual(png);
+    const etag = original.headers.get('etag');
+    if (!etag) throw new Error('Expected an original file validator.');
+    const cached = await fetch(`${baseUrl}/api/documents/${document?.id}/content`, {
+      cache: 'no-cache',
+      headers: { 'If-None-Match': etag },
+    });
+    expect(cached.status).toBe(304);
+    expect(await cached.text()).toBe('');
+    const metadata = await fetch(`${baseUrl}/api/documents/${document?.id}`);
+    expect(metadata.headers.get('cache-control') ?? '').not.toContain('immutable');
   });
 
   it('deduplicates identical bytes even when uploaded concurrently under different names', async () => {
@@ -212,8 +223,20 @@ describe('document import API', () => {
     expect(
       (await sendFiles([{ name: 'large.png', bytes: Buffer.alloc(10 * 1024 * 1024 + 1) }])).status,
     ).toBe(413);
-    expect((await fetch(`${baseUrl}/api/documents/not-an-id/content`)).status).toBe(404);
-    expect((await fetch(`${baseUrl}/api/documents/${'a'.repeat(64)}/content`)).status).toBe(404);
+    for (const id of ['not-an-id', 'a'.repeat(64)]) {
+      for (const [suffix, method] of [
+        ['', 'GET'],
+        ['/content', 'GET'],
+        ['/extract', 'POST'],
+        ['/review', 'PATCH'],
+      ] as const) {
+        const missing = await fetch(`${baseUrl}/api/documents/${id}${suffix}`, { method });
+        expect(missing.status).toBe(404);
+        expect(await missing.json()).toEqual({
+          error: { code: 'DOCUMENT_NOT_FOUND', message: 'Document not found.' },
+        });
+      }
+    }
   });
 });
 

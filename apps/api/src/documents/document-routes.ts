@@ -23,6 +23,12 @@ const upload = multer({
   },
 }).array('files', uploadLimits.maxFiles);
 
+function sendDocumentNotFound(response: Response<ApiErrorResponse>) {
+  response.status(404).json({
+    error: { code: 'DOCUMENT_NOT_FOUND', message: 'Document not found.' },
+  });
+}
+
 export function createDocumentRouter(store: DocumentStore, readText: DocumentTextReader) {
   const router = Router();
   const processDocument = createDocumentProcessor(store, readText);
@@ -53,9 +59,7 @@ export function createDocumentRouter(store: DocumentStore, readText: DocumentTex
       ? await store.find(request.params.id)
       : undefined;
     if (!document) {
-      response
-        .status(404)
-        .json({ error: { code: 'DOCUMENT_NOT_FOUND', message: 'Document not found.' } });
+      sendDocumentNotFound(response);
       return;
     }
     response.json({ document });
@@ -68,9 +72,7 @@ export function createDocumentRouter(store: DocumentStore, readText: DocumentTex
         ? await processDocument(request.params.id)
         : undefined;
       if (!document) {
-        response
-          .status(404)
-          .json({ error: { code: 'DOCUMENT_NOT_FOUND', message: 'Document not found.' } });
+        sendDocumentNotFound(response);
         return;
       }
       response.json({ document });
@@ -81,9 +83,7 @@ export function createDocumentRouter(store: DocumentStore, readText: DocumentTex
     const id = request.params.id;
     const document = documentIdPattern.test(id) ? await store.find(id) : undefined;
     if (!document) {
-      response.status(404).json({
-        error: { code: 'DOCUMENT_NOT_FOUND', message: 'Document not found.' },
-      } satisfies ApiErrorResponse);
+      sendDocumentNotFound(response);
       return;
     }
     const contentType = { PDF: 'application/pdf', PNG: 'image/png', JPG: 'image/jpeg' }[
@@ -94,7 +94,7 @@ export function createDocumentRouter(store: DocumentStore, readText: DocumentTex
         'Content-Type': contentType,
         'Content-Disposition': `inline; filename="document.${document.fileType.toLowerCase()}"`,
         'X-Content-Type-Options': 'nosniff',
-        'Cache-Control': 'private, no-store',
+        'Cache-Control': 'private, max-age=31536000, immutable',
       })
       .send(await store.readOriginal(id));
   });
@@ -107,9 +107,7 @@ export function createDocumentRouter(store: DocumentStore, readText: DocumentTex
         ? await store.find(request.params.id)
         : undefined;
       if (!current) {
-        response
-          .status(404)
-          .json({ error: { code: 'DOCUMENT_NOT_FOUND', message: 'Document not found.' } });
+        sendDocumentNotFound(response);
         return;
       }
       const input = validateReviewInput(request.body as unknown);
@@ -123,9 +121,7 @@ export function createDocumentRouter(store: DocumentStore, readText: DocumentTex
             : current.extraction,
       });
       if (!document) {
-        response
-          .status(404)
-          .json({ error: { code: 'DOCUMENT_NOT_FOUND', message: 'Document not found.' } });
+        sendDocumentNotFound(response);
         return;
       }
       response.json({ document });

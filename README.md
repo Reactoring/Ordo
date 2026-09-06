@@ -168,6 +168,8 @@ Amounts are integer cents. Required fields, real calendar dates, supported curre
 
 The store supports one local workspace and one API process. Data and temporary files are ignored by Git. Test fixtures are fictional and are not loaded by the running application.
 
+Original file URLs include their content hash and never change their bytes. Responses allow private browser caching for one year with `immutable`, so card previews and review pages can reuse the same file. This policy applies only to originals, not editable metadata. Revisit browser cache lifetime if access control or document removal is introduced.
+
 ### Reading documents
 
 PDF.js first reads embedded PDF text. Pages with fewer than 40 non-whitespace characters are rendered for Tesseract OCR; mixed PDFs can use both paths. PNG/JPEG images use OCR directly. English and French models are installed with the project, and documents are never uploaded to an external recognition service.
