@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@ordo/contracts": "workspace:*",
     "express": "5.2.1"
   },
   "devDependencies": {

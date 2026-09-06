@@ -1,10 +1,11 @@
-import express from 'express';
+import express, { type Response } from 'express';
+import type { ServiceHealthResponse } from '@ordo/contracts';
 
 export function createApp() {
   const app = express();
   app.disable('x-powered-by');
 
-  app.get('/api/health', (_request, response) => {
+  app.get('/api/health', (_request, response: Response<ServiceHealthResponse>) => {
     response.json({ status: 'ok' });
   });
 
