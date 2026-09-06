@@ -23,6 +23,7 @@ export function App() {
         <Route path="/" element={<Navigate to="/documents" replace />} />
         <Route path="/documents" element={<DocumentsPage />} />
         <Route path="/review" element={<ReviewPage />} />
+        <Route path="/review/:documentId" element={<ReviewPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </AppShell>

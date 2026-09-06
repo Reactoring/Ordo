@@ -5,7 +5,12 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { Server } from 'node:http';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { DocumentResponse, DocumentsResponse, UploadDocumentsResponse } from '@ordo/contracts';
+import type {
+  DocumentResponse,
+  DocumentsResponse,
+  ReviewDocumentInput,
+  UploadDocumentsResponse,
+} from '@ordo/contracts';
 import { createApp } from '../app.js';
 import { LocalDocumentStore } from './local-document-store.js';
 import { createTextPdf } from '../../../../tests/fixtures/create-pdf.js';
@@ -209,5 +214,105 @@ describe('document import API', () => {
     ).toBe(413);
     expect((await fetch(`${baseUrl}/api/documents/not-an-id/content`)).status).toBe(404);
     expect((await fetch(`${baseUrl}/api/documents/${'a'.repeat(64)}/content`)).status).toBe(404);
+  });
+});
+
+describe('document review API', () => {
+  async function importForReview() {
+    const response: UploadDocumentsResponse = await (
+      await sendFiles([{ name: 'receipt.png', bytes: png }])
+    ).json();
+    const id = response.results[0]?.document.id;
+    if (!id) throw new Error('Expected a document.');
+    const details: DocumentResponse = await (await fetch(`${baseUrl}/api/documents/${id}`)).json();
+    return details.document;
+  }
+  const fields = {
+    supplier: 'Demo Supplier',
+    invoiceNumber: 'REC-42',
+    invoiceDate: '2026-09-05',
+    currency: 'EUR' as const,
+    subtotalCents: 1000,
+    taxCents: 200,
+    totalCents: 1200,
+  };
+  function save(id: string, input: ReviewDocumentInput) {
+    return fetch(`${baseUrl}/api/documents/${id}/review`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+  }
+
+  it('persists corrected values and the reviewed status without changing the original', async () => {
+    const current = await importForReview();
+    const response = await save(current.id, {
+      revision: current.revision,
+      fields: { ...fields, supplier: '  Corrected Supplier  ' },
+    });
+    expect(response.status).toBe(200);
+    const result: DocumentResponse = await response.json();
+    expect(result.document).toMatchObject({
+      status: 'reviewed',
+      revision: current.revision + 1,
+      fields: { ...fields, supplier: 'Corrected Supplier' },
+    });
+    expect(result.document.reviewedAt).toEqual(expect.any(String));
+    await stopServer();
+    await startServer();
+    const reopened: DocumentResponse = await (
+      await fetch(`${baseUrl}/api/documents/${current.id}`)
+    ).json();
+    expect(reopened).toEqual(result);
+    const repeated = await fetch(`${baseUrl}/api/documents/${current.id}/extract`, {
+      method: 'POST',
+    });
+    expect(await repeated.json()).toEqual(result);
+    expect(await readFile(path.join(directory, current.id, 'original'))).toEqual(png);
+    const list: DocumentsResponse = await (await fetch(`${baseUrl}/api/documents`)).json();
+    expect(list.documents[0]?.status).toBe('reviewed');
+  });
+
+  it('rejects invalid review data without changing the stored revision', async () => {
+    const current = await importForReview();
+    for (const invalid of [
+      { ...fields, totalCents: 1199 },
+      { ...fields, taxCents: 200.5 },
+      { ...fields, subtotalCents: -1000 },
+      { ...fields, supplier: ' ' },
+      { ...fields, invoiceDate: '2026-02-30' },
+      { ...fields, currency: null },
+      { ...fields, totalCents: null },
+    ]) {
+      expect((await save(current.id, { revision: current.revision, fields: invalid })).status).toBe(
+        400,
+      );
+    }
+    const malformed = await fetch(`${baseUrl}/api/documents/${current.id}/review`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{',
+    });
+    expect(malformed.status).toBe(400);
+    const reopened: DocumentResponse = await (
+      await fetch(`${baseUrl}/api/documents/${current.id}`)
+    ).json();
+    expect(reopened.document).toEqual(current);
+  });
+
+  it('allows only one of two concurrent saves at the same revision', async () => {
+    const current = await importForReview();
+    const responses = await Promise.all(
+      ['First correction', 'Second correction'].map((supplier) =>
+        save(current.id, { revision: current.revision, fields: { ...fields, supplier } }),
+      ),
+    );
+    expect(responses.map((response) => response.status).sort()).toEqual([200, 409]);
+    const winner = responses.find((response) => response.ok);
+    if (!winner) throw new Error('Expected one successful save.');
+    const saved: DocumentResponse = await winner.json();
+    const reopened = await fetch(`${baseUrl}/api/documents/${current.id}`);
+    expect(await reopened.json()).toEqual(saved);
+    expect((await save(current.id, { revision: current.revision, fields })).status).toBe(409);
   });
 });

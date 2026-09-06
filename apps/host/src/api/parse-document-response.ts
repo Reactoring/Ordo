@@ -1,4 +1,9 @@
-import type { DocumentsResponse, UploadedDocument, UploadDocumentsResponse } from '@ordo/contracts';
+import type {
+  DocumentResponse,
+  DocumentsResponse,
+  UploadedDocument,
+  UploadDocumentsResponse,
+} from '@ordo/contracts';
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -64,5 +69,63 @@ export function parseUploadResponse(value: unknown): UploadDocumentsResponse {
       }
       return { document: parseDocument(result.document), outcome: result.outcome };
     }),
+  };
+}
+
+function nullableText(value: unknown): value is string | null {
+  return value === null || (typeof value === 'string' && value.length <= 200);
+}
+
+function nullableCents(value: unknown): value is number | null {
+  return value === null || (typeof value === 'number' && Number.isSafeInteger(value) && value >= 0);
+}
+
+export function parseDocumentResponse(value: unknown): DocumentResponse {
+  if (!isRecord(value) || !isRecord(value.document))
+    throw new Error('Unexpected document details response.');
+  const { fields, extraction, revision, reviewedAt } = value.document;
+  const metadata = parseDocument(value.document);
+  if (
+    !isRecord(fields) ||
+    !nullableText(fields.supplier) ||
+    !nullableText(fields.invoiceNumber) ||
+    !nullableText(fields.invoiceDate) ||
+    (fields.currency !== null &&
+      fields.currency !== 'EUR' &&
+      fields.currency !== 'USD' &&
+      fields.currency !== 'GBP') ||
+    !nullableCents(fields.subtotalCents) ||
+    !nullableCents(fields.taxCents) ||
+    !nullableCents(fields.totalCents) ||
+    !isRecord(extraction) ||
+    (extraction.status !== 'pending' &&
+      extraction.status !== 'extracted' &&
+      extraction.status !== 'manual' &&
+      extraction.status !== 'failed') ||
+    (extraction.message !== null && typeof extraction.message !== 'string') ||
+    typeof revision !== 'number' ||
+    !Number.isSafeInteger(revision) ||
+    revision < 0 ||
+    (reviewedAt !== null &&
+      (typeof reviewedAt !== 'string' || !Number.isFinite(Date.parse(reviewedAt))))
+  ) {
+    throw new Error('Unexpected document details response.');
+  }
+  return {
+    document: {
+      ...metadata,
+      revision,
+      reviewedAt,
+      extraction: { status: extraction.status, message: extraction.message },
+      fields: {
+        supplier: fields.supplier,
+        invoiceNumber: fields.invoiceNumber,
+        invoiceDate: fields.invoiceDate,
+        currency: fields.currency,
+        subtotalCents: fields.subtotalCents,
+        taxCents: fields.taxCents,
+        totalCents: fields.totalCents,
+      },
+    },
   };
 }

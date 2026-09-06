@@ -53,22 +53,22 @@ function renderWorkspace() {
 }
 
 describe('document workspace', () => {
-  it('loads server documents, combines file filters and search, and recovers from an empty result', async () => {
+  it('loads server documents, searches filenames, and recovers from an empty result without type filters', async () => {
     const user = userEvent.setup();
     renderWorkspace();
     expect(await screen.findAllByRole('article')).toHaveLength(3);
     expect(screen.queryByText('Example documents')).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Images 1' }));
-    expect(screen.getAllByRole('article')).toHaveLength(1);
-    await user.type(screen.getByRole('searchbox', { name: 'Search documents' }), '  NORTHLINE  ');
+    expect(screen.queryByRole('group', { name: 'Filter documents' })).not.toBeInTheDocument();
+    await user.type(screen.getByRole('searchbox'), 'missing');
     expect(screen.getByRole('heading', { name: 'No matching documents' })).toBeVisible();
-    await user.click(screen.getByRole('button', { name: 'PDFs 2' }));
+    await user.click(screen.getByRole('button', { name: 'Clear search' }));
+    await user.type(screen.getByRole('searchbox', { name: 'Search documents' }), '  NORTHLINE  ');
     expect(screen.getByRole('article', { name: 'northline-september.pdf' })).toBeVisible();
     expect(
       screen.getByRole('link', { name: 'Open original northline-september.pdf (new tab)' }),
     ).toHaveAttribute('href', `/api/documents/${'a'.repeat(64)}/content`);
     await user.clear(screen.getByRole('searchbox'));
-    expect(screen.getAllByRole('article')).toHaveLength(2);
+    expect(screen.getAllByRole('article')).toHaveLength(3);
   });
 
   it('imports from an empty workspace, refreshes the collection, and reports duplicates', async () => {
@@ -149,20 +149,18 @@ describe('document workspace', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('imports dropped files and resets filters so the imported document can be found', async () => {
+  it('imports dropped files and clears search so the imported document can be found', async () => {
     const user = userEvent.setup();
     renderWorkspace();
     await screen.findAllByRole('article');
-    await user.click(screen.getByRole('button', { name: 'Images 1' }));
+    await user.type(screen.getByRole('searchbox'), 'monogram');
     fireEvent.drop(screen.getByRole('region', { name: 'A place for every invoice.' }), {
       dataTransfer: { files: [new File(['pdf'], 'new-invoice.pdf', { type: 'application/pdf' })] },
     });
     await screen.findByText('1 document imported.');
     expect(screen.getByRole('article', { name: 'new-invoice.pdf' })).toBeVisible();
-    expect(screen.getByRole('button', { name: 'All documents 4' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    expect(screen.getByRole('searchbox')).toHaveValue('');
+    expect(screen.getAllByRole('article')).toHaveLength(4);
   });
 
   it('offers recovery when loading the collection fails', async () => {

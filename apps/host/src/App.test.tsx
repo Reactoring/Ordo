@@ -5,7 +5,7 @@ import { MemoryRouter, useLocation } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { createQueryClient } from './app/query-client';
-import { documentsResponse } from '../../../tests/fixtures/documents';
+import { documentsResponse, exampleDocumentDetails } from '../../../tests/fixtures/documents';
 
 let client: QueryClient;
 const fetch = vi.fn<typeof globalThis.fetch>();
@@ -15,7 +15,13 @@ beforeEach(() => {
   fetch
     .mockReset()
     .mockImplementation(async (url) =>
-      Response.json(url === '/api/documents' ? documentsResponse() : { status: 'ok' }),
+      Response.json(
+        url === '/api/documents'
+          ? documentsResponse()
+          : url === '/api/health'
+            ? { status: 'ok' }
+            : { document: exampleDocumentDetails },
+      ),
     );
   vi.stubGlobal('fetch', fetch);
 });
@@ -51,14 +57,16 @@ describe('workspace navigation', () => {
     expect(await screen.findByText('Document service available')).toBeVisible();
 
     await user.click(screen.getByRole('link', { name: 'Open review workspace' }));
-    expect(await screen.findByRole('heading', { name: 'No document selected' })).toBeVisible();
-    expect(screen.getByLabelText('Current path')).toHaveTextContent('/review');
+    expect(await screen.findByRole('heading', { name: 'A closer look.' })).toBeVisible();
+    expect(screen.getByLabelText('Current path')).toHaveTextContent(
+      `/review/${exampleDocumentDetails.id}`,
+    );
 
     await user.click(screen.getByRole('button', { name: 'Back to documents' }));
     expect(await screen.findByRole('heading', { name: 'Documents, in order.' })).toBeVisible();
     expect(screen.getByLabelText('Current path')).toHaveTextContent('/documents');
     expect(screen.getByText('Document service available')).toBeVisible();
-    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch).toHaveBeenCalledTimes(3);
   });
 
   it('opens a direct review URL and returns to documents without requiring previous history', async () => {

@@ -53,13 +53,15 @@ export function parseInvoiceText(text: string): DocumentFields {
   if (/\bGBP\b|£/i.test(text)) currencies.push('GBP');
   return {
     ...emptyDocumentFields(),
-    supplier: values(/^(?:supplier|fournisseur|from|[eé]metteur)\s*:?\s*(.*)$/i, (value) =>
-      value.length > 1 &&
-      value.length <= 200 &&
-      /[a-z]/i.test(value) &&
-      !/^(?:bill to|client|invoice|facture)\b/i.test(value)
-        ? value
-        : null,
+    supplier: values(
+      /^(?:supplier|fournisseur|from|[eé]metteur)(?=\s|:|$)\s*:?\s*(.*)$/i,
+      (value) =>
+        value.length > 1 &&
+        value.length <= 200 &&
+        /[a-z]/i.test(value) &&
+        !/^(?:bill to|client|invoice|facture)\b/i.test(value)
+          ? value
+          : null,
     ),
     invoiceNumber: values(
       /^(?:invoice(?:\s+(?:number|no\.?))?|facture(?:\s*(?:n[°oº.]|num[eé]ro))?|reference|r[eé]f[eé]rence)\s*[:#]?\s*(.*)$/i,

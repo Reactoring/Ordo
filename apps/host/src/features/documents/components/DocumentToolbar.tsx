@@ -1,41 +1,18 @@
-import { FilterChip, Icon } from '@ordo/ui';
-import type { DocumentFilter } from '../document.types';
+import { Icon } from '@ordo/ui';
 
 interface DocumentToolbarProps {
-  filter: DocumentFilter;
-  onFilterChange: (filter: DocumentFilter) => void;
-  counts: Record<DocumentFilter, number>;
+  count: number;
   search: string;
   onSearchChange: (search: string) => void;
 }
 
-const filters: { value: DocumentFilter; label: string }[] = [
-  { value: 'all', label: 'All documents' },
-  { value: 'PDF', label: 'PDFs' },
-  { value: 'images', label: 'Images' },
-];
-
-export function DocumentToolbar({
-  filter,
-  onFilterChange,
-  counts,
-  search,
-  onSearchChange,
-}: DocumentToolbarProps) {
+export function DocumentToolbar({ count, search, onSearchChange }: DocumentToolbarProps) {
   return (
     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-      <div role="group" aria-label="Filter documents" className="flex flex-wrap gap-2">
-        {filters.map(({ value, label }) => (
-          <FilterChip
-            key={value}
-            active={filter === value}
-            count={counts[value]}
-            onClick={() => onFilterChange(value)}
-          >
-            {label}
-          </FilterChip>
-        ))}
-      </div>
+      <h2 className="flex items-center gap-2 text-sm font-semibold">
+        All documents{' '}
+        <span className="rounded-full bg-plum-100 px-2 py-0.5 text-xs text-plum-700">{count}</span>
+      </h2>
       <div role="search" className="relative w-full lg:max-w-xs">
         <label htmlFor="document-search" className="sr-only">
           Search documents

@@ -1,7 +1,15 @@
 import { Link } from 'react-router';
 import { Icon, buttonClassName } from '@ordo/ui';
 
-export function ReviewSummary({ count }: { count: number }) {
+export function ReviewSummary({
+  total,
+  remaining,
+  nextDocumentId,
+}: {
+  total: number;
+  remaining: number;
+  nextDocumentId: string | undefined;
+}) {
   return (
     <aside
       aria-label="Review overview"
@@ -15,23 +23,29 @@ export function ReviewSummary({ count }: { count: number }) {
       </div>
       <div className="flex-1">
         <h2 className="text-sm font-semibold">
-          {count > 0
-            ? `${count} ${count === 1 ? 'document' : 'documents'} collected`
-            : 'Ready for a fresh start.'}
+          {remaining > 0
+            ? `${remaining} ${remaining === 1 ? 'document' : 'documents'} to review`
+            : total > 0
+              ? 'Everything is in order.'
+              : 'Ready for a fresh start.'}
         </h2>
         <p className="mt-1 text-xs leading-5 text-muted">
-          {count > 0
-            ? 'Your originals, saved together and ready to open.'
-            : 'Collect your invoices, then review the details.'}
+          {remaining > 0
+            ? 'Check the details, then carry on with your day.'
+            : total > 0
+              ? 'All your documents have been reviewed.'
+              : 'Collect your invoices, then review the details.'}
         </p>
-        <Link
-          to="/review"
-          aria-label="Open review workspace"
-          className={buttonClassName({ variant: 'ghost', size: 'sm', className: 'mt-2' })}
-        >
-          Open review
-          <Icon name="arrowRight" className="size-4" />
-        </Link>
+        {nextDocumentId ? (
+          <Link
+            to={`/review/${nextDocumentId}`}
+            aria-label="Open review workspace"
+            className={buttonClassName({ variant: 'ghost', size: 'sm', className: 'mt-2' })}
+          >
+            Open review
+            <Icon name="arrowRight" className="size-4" />
+          </Link>
+        ) : null}
       </div>
     </aside>
   );

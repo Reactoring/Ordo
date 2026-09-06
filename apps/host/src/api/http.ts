@@ -14,11 +14,16 @@ export async function getJson(path: string, signal: AbortSignal): Promise<unknow
 
 export async function requestJson(
   path: string,
-  options: { method?: 'POST' | 'PATCH' | 'DELETE'; body?: BodyInit; signal?: AbortSignal },
+  options: {
+    method?: 'POST' | 'PATCH' | 'DELETE';
+    body?: BodyInit;
+    signal?: AbortSignal;
+    headers?: Record<string, string>;
+  },
 ): Promise<unknown> {
   const response = await fetch(path, {
     ...options,
-    headers: { Accept: 'application/json' },
+    headers: { ...options.headers, Accept: 'application/json' },
   });
 
   if (!response.ok) {

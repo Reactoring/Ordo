@@ -1,4 +1,5 @@
 import type { UploadedDocument } from '@ordo/contracts';
+import { Link } from 'react-router';
 import { Badge, Icon, buttonClassName } from '@ordo/ui';
 import { documentContentUrl, formatFileSize, formatUploadDate } from '../format-document';
 import { DocumentPreview } from './DocumentPreview';
@@ -29,15 +30,17 @@ export function DocumentCard({ document }: { document: UploadedDocument }) {
             </p>
           </div>
         </div>
-        <p className="mt-3 text-xs text-muted">
-          Uploaded{' '}
-          <time dateTime={document.uploadedAt}>{formatUploadDate(document.uploadedAt)}</time>
-        </p>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-          <Badge>
-            <Icon name="check" className="size-3.5" />
-            Uploaded
+          <span className="text-xs text-muted">
+            Uploaded{' '}
+            <time dateTime={document.uploadedAt}>{formatUploadDate(document.uploadedAt)}</time>
+          </span>
+          <Badge tone={document.status === 'reviewed' ? 'success' : 'warning'}>
+            <Icon name={document.status === 'reviewed' ? 'check' : 'clock'} className="size-3.5" />
+            {document.status === 'reviewed' ? 'Reviewed' : 'Needs review'}
           </Badge>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
           <a
             href={documentContentUrl(document.id)}
             target="_blank"
@@ -48,6 +51,13 @@ export function DocumentCard({ document }: { document: UploadedDocument }) {
             Open original
             <Icon name="arrowRight" className="size-4" />
           </a>
+          <Link
+            to={`/review/${document.id}`}
+            aria-label={`Review ${document.fileName}`}
+            className={buttonClassName({ variant: 'secondary', size: 'sm' })}
+          >
+            {document.status === 'reviewed' ? 'View details' : 'Review'}
+          </Link>
         </div>
       </div>
     </article>

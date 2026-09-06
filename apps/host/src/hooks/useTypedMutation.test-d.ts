@@ -1,8 +1,22 @@
 import { expectTypeOf } from 'vitest';
-import type { UploadDocumentsResponse } from '@ordo/contracts';
+import type {
+  DocumentResponse,
+  ReviewDocumentInput,
+  UploadDocumentsResponse,
+} from '@ordo/contracts';
 import { useTypedMutation } from './useTypedMutation';
 
 export function TypedMutationTypeChecks() {
+  useTypedMutation('reviewDocument', {
+    onSuccess: (data, variables) => {
+      expectTypeOf(data).toEqualTypeOf<DocumentResponse>();
+      expectTypeOf(variables.input).toEqualTypeOf<ReviewDocumentInput>();
+    },
+  });
+  // @ts-expect-error A review needs both an identifier and a typed review payload.
+  useTypedMutation('reviewDocument').mutate({ id: '42' });
+  // @ts-expect-error Extraction needs an identifier rather than uploaded files.
+  useTypedMutation('extractDocument').mutate({ files: [] });
   const upload = useTypedMutation('uploadDocuments');
   expectTypeOf(upload.data).toEqualTypeOf<UploadDocumentsResponse | undefined>();
   expectTypeOf(upload.mutateAsync({ files: [] })).toEqualTypeOf<Promise<UploadDocumentsResponse>>();

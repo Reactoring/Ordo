@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { parseInvoiceText } from './parse-invoice.js';
 
 describe('invoice field extraction', () => {
+  it('does not mistake a supplier name beginning with a label for a labelled field', () => {
+    expect(parseInvoiceText('Fromage Example\nSupplierware Ltd').supplier).toBeNull();
+  });
   it('reads labelled English fields and preserves integer cents', () => {
     expect(
       parseInvoiceText(

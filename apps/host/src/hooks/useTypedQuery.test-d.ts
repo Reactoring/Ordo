@@ -1,4 +1,4 @@
-import type { ApiQueries, ServiceHealthResponse } from '@ordo/contracts';
+import type { ApiQueries, DocumentResponse, ServiceHealthResponse } from '@ordo/contracts';
 import { QueryClient } from '@tanstack/react-query';
 import { expectTypeOf } from 'vitest';
 import { getTypedQueryOptions } from '../api/endpoints';
@@ -47,6 +47,12 @@ export function checkEndpointTypes() {
 }
 
 export function TypedQueryTypeChecks() {
+  const document = useTypedQuery('document', { id: '42' });
+  expectTypeOf(document.data).toEqualTypeOf<DocumentResponse | undefined>();
+  // @ts-expect-error A document identifier is required.
+  useTypedQuery('document');
+  // @ts-expect-error Identifiers cannot be numeric.
+  useTypedQuery('document', { id: 42 });
   const query = useTypedQuery('serviceHealth');
   expectTypeOf(query.data).toEqualTypeOf<ServiceHealthResponse | undefined>();
   const selected = useTypedQuery('serviceHealth', undefined, { select: (data) => data.status });

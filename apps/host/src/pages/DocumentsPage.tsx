@@ -9,7 +9,7 @@ import { ServiceStatus } from '../features/service-health/ServiceStatus';
 
 export function DocumentsPage() {
   const workspace = useDocumentsWorkspace();
-  const upload = useDocumentUpload(workspace.query.data?.uploadLimits, workspace.resetFilters);
+  const upload = useDocumentUpload(workspace.query.data?.uploadLimits, workspace.resetSearch);
   const hasDocuments = workspace.counts.all > 0;
   const hasResults = workspace.visibleDocuments.length > 0;
   const uploadCard = (
@@ -35,12 +35,14 @@ export function DocumentsPage() {
             One home for your invoices. One less thing on your mind.
           </p>
         </div>
-        <ReviewSummary count={workspace.counts.all} />
+        <ReviewSummary
+          total={workspace.counts.all}
+          remaining={workspace.counts.needsReview}
+          nextDocumentId={workspace.nextDocumentId}
+        />
       </div>
       <DocumentToolbar
-        filter={workspace.filter}
-        onFilterChange={workspace.setFilter}
-        counts={workspace.counts}
+        count={workspace.counts.all}
         search={workspace.search}
         onSearchChange={workspace.setSearch}
       />
@@ -89,10 +91,10 @@ export function DocumentsPage() {
               <EmptyState
                 icon={<Icon name="search" className="size-7" />}
                 title="No matching documents"
-                description="Try another file name or clear your filters."
+                description="Try another file name or clear your search."
               >
-                <Button variant="secondary" onClick={workspace.resetFilters}>
-                  Clear filters
+                <Button variant="secondary" onClick={workspace.resetSearch}>
+                  Clear search
                 </Button>
               </EmptyState>
             ) : (

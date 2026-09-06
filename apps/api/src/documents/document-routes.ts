@@ -1,4 +1,4 @@
-import { Router, type ErrorRequestHandler, type Response } from 'express';
+import { json, Router, type ErrorRequestHandler, type Response } from 'express';
 import multer from 'multer';
 import type {
   ApiErrorResponse,
@@ -6,11 +6,12 @@ import type {
   DocumentsResponse,
   UploadDocumentsResponse,
 } from '@ordo/contracts';
-import { documentIdPattern, type DocumentStore } from './document-store.js';
+import { DocumentConflictError, documentIdPattern, type DocumentStore } from './document-store.js';
 import { uploadLimits, UploadValidationError, validateUpload } from './validate-upload.js';
 import { documentSummary } from './document-data.js';
 import { createDocumentProcessor } from './extraction/process-document.js';
 import type { PdfTextReader } from './extraction/read-pdf-text.js';
+import { ReviewValidationError, validateReviewInput } from './validate-review.js';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -98,6 +99,39 @@ export function createDocumentRouter(store: DocumentStore, readText?: PdfTextRea
       .send(await store.readOriginal(id));
   });
 
+  router.patch(
+    '/:id/review',
+    json({ limit: '16kb' }),
+    async (request, response: Response<DocumentResponse | ApiErrorResponse>) => {
+      const current = documentIdPattern.test(request.params.id)
+        ? await store.find(request.params.id)
+        : undefined;
+      if (!current) {
+        response
+          .status(404)
+          .json({ error: { code: 'DOCUMENT_NOT_FOUND', message: 'Document not found.' } });
+        return;
+      }
+      const input = validateReviewInput(request.body as unknown);
+      const document = await store.update(current.id, input.revision, {
+        fields: input.fields,
+        status: 'reviewed',
+        reviewedAt: new Date().toISOString(),
+        extraction:
+          current.extraction.status === 'pending'
+            ? { status: 'manual', message: 'Details were entered manually before extraction.' }
+            : current.extraction,
+      });
+      if (!document) {
+        response
+          .status(404)
+          .json({ error: { code: 'DOCUMENT_NOT_FOUND', message: 'Document not found.' } });
+        return;
+      }
+      response.json({ document });
+    },
+  );
+
   const handleError: ErrorRequestHandler = (error: unknown, _request, response, next) => {
     if (error instanceof multer.MulterError) {
       const tooLarge = error.code === 'LIMIT_FILE_SIZE';
@@ -107,6 +141,28 @@ export function createDocumentRouter(store: DocumentStore, readText?: PdfTextRea
           message: tooLarge
             ? 'Each file must be 10 MB or smaller.'
             : 'Upload up to 5 files using the files field.',
+        },
+      } satisfies ApiErrorResponse);
+    } else if (error instanceof DocumentConflictError) {
+      response.status(409).json({
+        error: { code: 'DOCUMENT_CONFLICT', message: error.message },
+      } satisfies ApiErrorResponse);
+    } else if (error instanceof ReviewValidationError) {
+      response.status(400).json({
+        error: { code: 'INVALID_REVIEW', message: error.message },
+      } satisfies ApiErrorResponse);
+    } else if (
+      error instanceof Error &&
+      'type' in error &&
+      (error.type === 'entity.parse.failed' || error.type === 'entity.too.large')
+    ) {
+      const tooLarge = error.type === 'entity.too.large';
+      response.status(tooLarge ? 413 : 400).json({
+        error: {
+          code: 'INVALID_JSON',
+          message: tooLarge
+            ? 'The review request is too large.'
+            : 'Send a valid JSON review request.',
         },
       } satisfies ApiErrorResponse);
     } else if (error instanceof UploadValidationError) {

@@ -1,4 +1,8 @@
-import type { DocumentsResponse, UploadedDocument } from '../../packages/contracts/src/documents';
+import type {
+  DocumentDetails,
+  DocumentsResponse,
+  UploadedDocument,
+} from '../../packages/contracts/src/documents';
 export const exampleDocuments: UploadedDocument[] = [
   {
     id: 'a'.repeat(64),
@@ -28,3 +32,24 @@ export const exampleDocuments: UploadedDocument[] = [
 export function documentsResponse(documents = exampleDocuments): DocumentsResponse {
   return { documents, uploadLimits: { maxFiles: 5, maxFileSizeBytes: 10 * 1024 * 1024 } };
 }
+
+export const exampleDocumentDetails: DocumentDetails = {
+  id: 'a'.repeat(64),
+  fileName: 'northline-september.pdf',
+  fileType: 'PDF',
+  sizeBytes: 20480,
+  uploadedAt: '2026-09-05T09:00:00.000Z',
+  status: 'needs_review',
+  revision: 1,
+  reviewedAt: null,
+  extraction: { status: 'extracted', message: 'Check the suggested values against the original.' },
+  fields: {
+    supplier: 'Northline Workspace',
+    invoiceNumber: 'INV-42',
+    invoiceDate: '2026-09-02',
+    currency: 'EUR',
+    subtotalCents: 12500,
+    taxCents: 2500,
+    totalCents: 15000,
+  },
+};

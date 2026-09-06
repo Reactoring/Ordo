@@ -4,7 +4,7 @@ ORDO helps independent professionals collect purchase documents, review extracte
 
 ## Status
 
-The local application includes a federated review module, URL navigation, and persistent document imports. The Documents screen accepts PDF, PNG, and JPEG files through selection or drag-and-drop, displays saved originals, and supports file-name search and format filters. The API extracts fields from text-based PDFs and persists them for review. Review provides an original preview and an editable form through its public props; connecting document routes and correction persistence is the next step. OCR and export are not implemented yet.
+The local application supports import, PDF text extraction, review, and saved corrections. The Documents screen accepts PDF, PNG, and JPEG files through selection or drag-and-drop and provides file-name search. Each document opens in the federated Review module with its original beside an editable form. Validating saves the corrected fields and updates the collection's review status. Originals, extraction results, and corrections survive reloads and API restarts. OCR and export are not implemented yet.
 
 ## First release
 
@@ -26,11 +26,13 @@ Images, PDFs without embedded text, and documents beyond the extraction limits r
 
 Extracted values require human review; missing values remain empty. Arithmetic checks are review aids, not accounting or tax guarantees.
 
-The first release targets selected invoice layouts. Scanned PDFs, arbitrary receipt layouts, and detailed line items are later extensions.
+Automatic extraction targets selected invoice layouts. Images and scanned PDFs can already be reviewed through manual entry; their automatic processing and detailed line items are later extensions.
 
 ### Import and local persistence
 
 `POST /api/documents` accepts a multipart `files` field with up to five files, 10 MB each. The API checks PDF/PNG/JPEG signatures and matching extensions before storing the selection. Signature checks identify the format; they do not guarantee a document can be parsed. `GET /api/documents` returns the collection and upload limits, `GET /api/documents/:id` returns document details, and `GET /api/documents/:id/content` serves an original file. `POST /api/documents/:id/extract` processes earlier imports whose extraction is still pending; repeating it preserves completed processing and user data.
+
+`PATCH /api/documents/:id/review` accepts `{ revision, fields }` as JSON. The API validates required fields, calendar dates, currency, integer cents, and matching totals independently of the form. Successful validation records `reviewed`, a review timestamp, and the next revision. Invalid input returns 400; a stale revision returns 409 without changing stored data. API errors use a structured code and message.
 
 Each document has its own directory under `apps/api/.data/documents`, containing `original` and `document.json`. Metadata includes file information, status, extracted fields, extraction outcome, revision, and review timestamp. Earlier metadata-only records are read as pending imports without replacing originals. Processing moves a document from `uploaded` to `needs_review`. `DATA_DIR` overrides the storage directory. Originals and metadata survive page reloads and API restarts and are ignored by Git.
 
@@ -48,7 +50,7 @@ This repository is a pnpm monorepo. **Applications** run independently; **packag
 | -------------------- | ---------------------------------------------------------------------------------------------- |
 | `apps/host`          | React application shell, navigation, and the document collection workflow.                     |
 | `apps/review`        | Review microfrontend with its own development server and build; exposes `review/ReviewModule`. |
-| `apps/api`           | Express API for health, document imports, listing, and original file access.                   |
+| `apps/api`           | Express API for imports, PDF extraction, review persistence, listing, and original access.     |
 | `packages/contracts` | Framework-independent types for review props, API query parameters, and responses.             |
 | `packages/ui`        | Shared React components, button variants, styles, and locally bundled fonts.                   |
 | `config`             | Common Webpack configuration and HTML template used by both frontends.                         |
@@ -67,22 +69,22 @@ Each frontend's `src/styles.css` references the theme without emitting it and ge
 ```mermaid
 flowchart LR
     Host["Host :3000"] -->|"Loads ReviewModule at runtime"| Review["Review :3001"]
-    Review -->|"Calls onClose"| Host
+    Review -->|"Calls onSave / onClose"| Host
     UI["Shared UI package"] -.->|"Included at build time"| Host
     UI -.->|"Included at build time"| Review
 ```
 
 1. Review's Webpack `exposes` publishes `ReviewModule.tsx` through a generated `remoteEntry.js`.
 2. The host's `remotes` maps `review` to that URL. `React.lazy(() => import('review/ReviewModule'))` loads the component asynchronously.
-3. The host renders it with typed props; `onClose` returns to the document workspace.
+3. The host fetches the selected document and renders Review with typed data, its original URL, and callbacks. `onSave` persists corrections through the host; `onClose` returns to Documents.
 
 `Suspense` handles loading; an error boundary handles remote failures. React and React DOM are shared singletons, initialized through the asynchronous `index.ts` → `bootstrap.tsx` entry. `remotes.d.ts` supplies compile-time types, not runtime validation.
 
-Review also has a standalone development page. The host uses the exposed component without running that page's `createRoot()`.
+Review also has a standalone development page, initially showing its empty state. The host uses the exposed component without running that page's `createRoot()`. Use the host to exercise real documents, or the module's provider-free tests to inspect form behavior independently.
 
 ### Boundaries and configuration
 
-The host owns navigation, Review owns its interface, and the API owns processing. Applications communicate through public contracts. Shared packages contain no application state. Future business rules will remain independent of React, HTTP, and extraction libraries.
+The host owns navigation, Review owns its interface, and the API owns processing. Applications communicate through public contracts. Shared packages contain no application state. Extraction rules are separate from PDF.js and Express; form conversion and validation are separate from React components. The API independently validates every save request.
 
 `ReviewModuleProps` accepts either an empty state with `onClose`, or document details, an original URL, and typed `onSave`/`onClose` callbacks. The host owns requests, save mutations, and cache invalidation; Review owns its React Hook Form draft, validation, and feedback. `onSave` resolves with the saved document or rejects with an error. Review does not import the host's query client, endpoints, or router; its behavior tests exercise the same props without either provider.
 
@@ -96,7 +98,7 @@ Across all applications and shared packages, custom React hooks live in a `hooks
 
 ### Navigation
 
-One React Router `BrowserRouter` runs in the host. `/` redirects to `/documents`; `/review` loads Review. Unknown URLs show a recovery page. Direct links, refresh, and browser history are supported. `App.tsx` declares routes; page components compose screens.
+One React Router `BrowserRouter` runs in the host. `/` redirects to `/documents`; `/review/:documentId` opens a selected document, and `/review` shows the empty review state. Unknown pages and unavailable documents have recovery screens. Direct links, refresh, and browser history are supported. `App.tsx` declares routes; page components compose screens.
 
 Review stays router-independent through `onClose`. Vitest navigation tests use the actual review component through a local alias; browser checks verify network-based federation.
 
@@ -104,14 +106,15 @@ Review stays router-independent through `onClose`. Vitest navigation tests use t
 
 One TanStack Query client is created above the router in `bootstrap.tsx`, preserving cache across navigation. The real `GET /api/health` request demonstrates loading, availability, connection, and retry states.
 
-| Host source directory     | Responsibility                                                                  |
-| ------------------------- | ------------------------------------------------------------------------------- |
-| `app`                     | Application-level setup, including query defaults.                              |
-| `pages`                   | Route-level screen composition.                                                 |
-| `api`                     | Typed endpoint catalog, query options, JSON transport, and response validation. |
-| `hooks`                   | Shared React hooks, named after their exports, such as `useTypedQuery.ts`.      |
-| `features/documents`      | Document cards, filters, selection validation, and import/workspace hooks.      |
-| `features/service-health` | Service status UI and its behavior tests.                                       |
+| Host source directory      | Responsibility                                                                  |
+| -------------------------- | ------------------------------------------------------------------------------- |
+| `app`                      | Application-level setup, including query defaults.                              |
+| `pages`                    | Route-level screen composition.                                                 |
+| `api`                      | Typed endpoint catalog, query options, JSON transport, and response validation. |
+| `hooks`                    | Shared React hooks, named after their exports, such as `useTypedQuery.ts`.      |
+| `features/documents`       | Document cards, filters, selection validation, and import/workspace hooks.      |
+| `features/document-review` | Document loading, preparation of earlier imports, saves, and cache updates.     |
+| `features/service-health`  | Service status UI and its behavior tests.                                       |
 
 Components call `useTypedQuery` with a registered GET endpoint. `ApiQueries` in `@ordo/contracts` associates each endpoint with its parameters and response; the host catalog supplies its URL builder and runtime decoder. Responses enter as `unknown` and are validated before success. Query cancellation reaches `fetch` through `AbortSignal`.
 
@@ -132,11 +135,13 @@ Endpoint parameters are inferred and required when declared. The hook retains op
 
 Data stays fresh for 30 seconds; inactive cache entries expire after 5 minutes. Stale queries refetch on mount, focus, or reconnection. Network and HTTP 5xx failures retry once; HTTP 4xx and invalid responses do not. Cache is memory-only, with no polling.
 
-Keys follow `['api', endpoint, params]`, separating endpoint and parameter combinations. `serviceHealth` and `documents` are registered; new queries require a contract, URL builder, and decoder. TanStack Query owns server state; React owns transient UI state. Review currently makes no API requests and does not consume the host's query client.
+Keys follow `['api', endpoint, params]`, separating endpoint and parameter combinations. `serviceHealth`, `documents`, and `document` are registered; document details require an `id`. New queries require a contract, URL builder, and decoder. TanStack Query owns server state; React owns transient UI state. Review makes no API requests and does not consume the host's query client.
 
 `useTypedMutation` follows the same endpoint-based approach for writes. The mutation catalog owns the request and response decoder, while the hook exposes typed variables, results, and callbacks. The upload input uses browser `File` objects, so its variable type lives in the host; response types are shared through `@ordo/contracts`. Uploads use multipart form data and are not retried automatically. Feature hooks own invalidation of affected queries.
 
-`useDocumentUpload` validates the selection, reports upload and duplicate outcomes, and invalidates the document collection after each attempt. This also reveals any files saved before an unexpected batch failure. Successful uploads clear active filters so the imported documents are visible. Example metadata lives only in `tests/fixtures` and is not used by the running application.
+`useDocumentUpload` validates the selection, reports upload and duplicate outcomes, and invalidates the document collection after each attempt. This also reveals any files saved before an unexpected batch failure. Successful uploads clear search so the imported documents are visible. Example metadata lives only in `tests/fixtures` and is not used by the running application.
+
+`useDocumentReview` loads details and prepares metadata-only imports once when opened. Successful extraction and review mutations cancel stale detail requests, update the typed detail cache without replacing a newer revision, and invalidate the collection. A conflicting save refreshes details while Review retains the draft. Failed background reads do not unmount an open form. The save callback resolves after cache updates, so returning to Documents shows the saved status.
 
 ## Stack
 
@@ -169,7 +174,11 @@ pnpm dev
 | Standalone review | http://127.0.0.1:3001            |
 | API health        | http://127.0.0.1:4000/api/health |
 
-Use **Add documents** or drop files onto the import card. Each selection accepts up to five PDF/PNG/JPEG files, 10 MB each. The page displays image previews and a PDF placeholder; **Open original** opens the saved file in a new tab. Reimporting identical bytes reports a duplicate. Search and PDF/image filters operate on the collection returned by the API. Select **Open review** to load the review module's current empty state. The host proxies `/api` to the backend. Development servers bind to loopback by default.
+Use **Add documents** or drop files onto the import card. Each selection accepts up to five PDF/PNG/JPEG files, 10 MB each. The collection displays image previews and a PDF placeholder; **Open original** opens the saved file in a new tab. Reimporting identical bytes reports a duplicate. File-name search applies to all documents; file-format filters are not part of the interface.
+
+Select **Review** on a card or **Open review** in the summary to open the next unreviewed document. Earlier imports are prepared on first opening. Check or complete the form, then select **Save and validate**. The card becomes **Reviewed** and can be reopened with **View details**. Images and scanned PDFs show a manual-entry explanation instead of invented fields. The original preview uses the browser's PDF viewer or an image; a new-tab link remains available if the browser cannot display it inline. Unsaved edits stay in the current form and are discarded when leaving the page.
+
+The host proxies `/api` to the backend. Development servers bind to loopback by default.
 
 Both `localhost` and `127.0.0.1` work locally. WebSocket clients follow the page's hostname while retaining their own frontend's port. Cross-origin assets are allowed only for the host's two local origins. Restart `pnpm dev` after changing Webpack configuration, then reload open pages.
 
