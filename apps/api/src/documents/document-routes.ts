@@ -1,8 +1,16 @@
 import { Router, type ErrorRequestHandler, type Response } from 'express';
 import multer from 'multer';
-import type { ApiErrorResponse, DocumentsResponse, UploadDocumentsResponse } from '@ordo/contracts';
+import type {
+  ApiErrorResponse,
+  DocumentResponse,
+  DocumentsResponse,
+  UploadDocumentsResponse,
+} from '@ordo/contracts';
 import { documentIdPattern, type DocumentStore } from './document-store.js';
 import { uploadLimits, UploadValidationError, validateUpload } from './validate-upload.js';
+import { documentSummary } from './document-data.js';
+import { createDocumentProcessor } from './extraction/process-document.js';
+import type { PdfTextReader } from './extraction/read-pdf-text.js';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -14,10 +22,11 @@ const upload = multer({
   },
 }).array('files', uploadLimits.maxFiles);
 
-export function createDocumentRouter(store: DocumentStore) {
+export function createDocumentRouter(store: DocumentStore, readText?: PdfTextReader) {
   const router = Router();
+  const processDocument = createDocumentProcessor(store, readText);
   router.get('/', async (_request, response: Response<DocumentsResponse>) => {
-    response.json({ documents: await store.list(), uploadLimits });
+    response.json({ documents: (await store.list()).map(documentSummary), uploadLimits });
   });
 
   router.post('/', upload, async (request, response: Response<UploadDocumentsResponse>) => {
@@ -27,11 +36,45 @@ export function createDocumentRouter(store: DocumentStore) {
     // Validate the whole selection before storing any of its documents.
     const files = await Promise.all(request.files.map(validateUpload));
     const results = [];
-    for (const file of files) results.push(await store.import(file));
+    for (const file of files) {
+      const result = await store.import(file);
+      const document = await processDocument(result.document.id);
+      if (!document) throw new Error('An imported document could not be found.');
+      results.push({ outcome: result.outcome, document: documentSummary(document) });
+    }
     response
       .status(results.some((result) => result.outcome === 'imported') ? 201 : 200)
       .json({ results });
   });
+
+  router.get('/:id', async (request, response: Response<DocumentResponse | ApiErrorResponse>) => {
+    const document = documentIdPattern.test(request.params.id)
+      ? await store.find(request.params.id)
+      : undefined;
+    if (!document) {
+      response
+        .status(404)
+        .json({ error: { code: 'DOCUMENT_NOT_FOUND', message: 'Document not found.' } });
+      return;
+    }
+    response.json({ document });
+  });
+
+  router.post(
+    '/:id/extract',
+    async (request, response: Response<DocumentResponse | ApiErrorResponse>) => {
+      const document = documentIdPattern.test(request.params.id)
+        ? await processDocument(request.params.id)
+        : undefined;
+      if (!document) {
+        response
+          .status(404)
+          .json({ error: { code: 'DOCUMENT_NOT_FOUND', message: 'Document not found.' } });
+        return;
+      }
+      response.json({ document });
+    },
+  );
 
   router.get('/:id/content', async (request, response) => {
     const id = request.params.id;

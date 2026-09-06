@@ -4,8 +4,11 @@ import type { ApiErrorResponse, ServiceHealthResponse } from '@ordo/contracts';
 import type { DocumentStore } from './documents/document-store.js';
 import { LocalDocumentStore } from './documents/local-document-store.js';
 import { createDocumentRouter } from './documents/document-routes.js';
+import type { PdfTextReader } from './documents/extraction/read-pdf-text.js';
 
-export function createApp(options: { documentStore?: DocumentStore } = {}) {
+export function createApp(
+  options: { documentStore?: DocumentStore; readPdfText?: PdfTextReader } = {},
+) {
   const app = express();
   app.disable('x-powered-by');
 
@@ -18,7 +21,7 @@ export function createApp(options: { documentStore?: DocumentStore } = {}) {
     new LocalDocumentStore(
       process.env.DATA_DIR ?? fileURLToPath(new URL('../.data/documents', import.meta.url)),
     );
-  app.use('/api/documents', createDocumentRouter(store));
+  app.use('/api/documents', createDocumentRouter(store, options.readPdfText));
 
   app.use((_request, response) => {
     response

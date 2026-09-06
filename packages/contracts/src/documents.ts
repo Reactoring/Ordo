@@ -1,4 +1,6 @@
 export type DocumentFileType = 'PDF' | 'PNG' | 'JPG';
+export type DocumentStatus = 'uploaded' | 'needs_review' | 'reviewed';
+export type DocumentCurrency = 'EUR' | 'USD' | 'GBP';
 
 export interface UploadedDocument {
   id: string;
@@ -6,7 +8,38 @@ export interface UploadedDocument {
   fileType: DocumentFileType;
   sizeBytes: number;
   uploadedAt: string;
-  status: 'uploaded';
+  status: DocumentStatus;
+}
+
+export interface DocumentFields {
+  supplier: string | null;
+  invoiceNumber: string | null;
+  invoiceDate: string | null;
+  currency: DocumentCurrency | null;
+  subtotalCents: number | null;
+  taxCents: number | null;
+  totalCents: number | null;
+}
+
+export interface DocumentExtraction {
+  status: 'pending' | 'extracted' | 'manual' | 'failed';
+  message: string | null;
+}
+
+export interface DocumentDetails extends UploadedDocument {
+  fields: DocumentFields;
+  extraction: DocumentExtraction;
+  revision: number;
+  reviewedAt: string | null;
+}
+
+export interface DocumentResponse {
+  document: DocumentDetails;
+}
+
+export interface ReviewDocumentInput {
+  revision: number;
+  fields: DocumentFields;
 }
 
 export interface UploadLimits {

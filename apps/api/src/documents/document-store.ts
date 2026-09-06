@@ -1,6 +1,17 @@
-import type { DocumentFileType, UploadedDocument } from '@ordo/contracts';
+import type { DocumentDetails, DocumentFileType } from '@ordo/contracts';
 
 export const documentIdPattern = /^[a-f0-9]{64}$/;
+
+export class DocumentConflictError extends Error {
+  constructor() {
+    super('This document changed in another request. Reopen it before saving again.');
+  }
+}
+
+export type DocumentChanges = Pick<
+  DocumentDetails,
+  'fields' | 'extraction' | 'status' | 'reviewedAt'
+>;
 
 export interface DocumentFile {
   fileName: string;
@@ -9,11 +20,16 @@ export interface DocumentFile {
 }
 
 export interface DocumentStore {
-  list(): Promise<UploadedDocument[]>;
-  find(id: string): Promise<UploadedDocument | undefined>;
+  list(): Promise<DocumentDetails[]>;
+  find(id: string): Promise<DocumentDetails | undefined>;
   import(file: DocumentFile): Promise<{
-    document: UploadedDocument;
+    document: DocumentDetails;
     outcome: 'imported' | 'duplicate';
   }>;
   readOriginal(id: string): Promise<Buffer>;
+  update(
+    id: string,
+    revision: number,
+    changes: DocumentChanges,
+  ): Promise<DocumentDetails | undefined>;
 }

@@ -4,7 +4,7 @@ ORDO helps independent professionals collect purchase documents, review extracte
 
 ## Status
 
-The local application includes a federated review module, URL navigation, and persistent document imports. The Documents screen accepts PDF, PNG, and JPEG files through selection or drag-and-drop, displays saved originals, and supports file-name search and format filters. Files survive page reloads and API restarts. Documents currently have an `uploaded` status; extraction, editing, and export are not implemented yet.
+The local application includes a federated review module, URL navigation, and persistent document imports. The Documents screen accepts PDF, PNG, and JPEG files through selection or drag-and-drop, displays saved originals, and supports file-name search and format filters. The API extracts fields from text-based PDFs and persists them for review. Files and extraction results survive page reloads and API restarts. The review form, correction workflow, OCR, and export are the next steps.
 
 ## First release
 
@@ -20,7 +20,9 @@ Processing failures will remain isolated per document. File hashes will identify
 
 ## Document processing
 
-The planned backend uses PDF.js for embedded PDF text, Tesseract.js for image OCR, and TypeScript rules for field extraction and arithmetic checks. No LLM service is required.
+The backend uses PDF.js for embedded PDF text and TypeScript rules for field extraction. New imports are processed before the import response returns. PDF extraction reads up to 20 pages and 100,000 characters; supported English and French labels identify supplier, reference, invoice date, currency, subtotal, tax, and total. Amounts are stored as integer cents. Ambiguous or missing values remain empty, and missing amounts are never calculated from other extracted fields. EUR, USD, and GBP are currently supported.
+
+Images, PDFs without embedded text, and documents beyond the extraction limits require manual entry. An unreadable PDF is still saved and does not stop other files in the batch. Tesseract.js OCR is a later step; no LLM service is required.
 
 Extracted values require human review; missing values remain empty. Arithmetic checks are review aids, not accounting or tax guarantees.
 
@@ -28,13 +30,15 @@ The first release targets selected invoice layouts. Scanned PDFs, arbitrary rece
 
 ### Import and local persistence
 
-`POST /api/documents` accepts a multipart `files` field with up to five files, 10 MB each. The API checks PDF/PNG/JPEG signatures and matching extensions before storing the selection. Signature checks identify the format; they do not guarantee a document can be parsed by the future extraction stage. `GET /api/documents` returns the collection and upload limits, and `GET /api/documents/:id/content` serves an original file.
+`POST /api/documents` accepts a multipart `files` field with up to five files, 10 MB each. The API checks PDF/PNG/JPEG signatures and matching extensions before storing the selection. Signature checks identify the format; they do not guarantee a document can be parsed. `GET /api/documents` returns the collection and upload limits, `GET /api/documents/:id` returns document details, and `GET /api/documents/:id/content` serves an original file. `POST /api/documents/:id/extract` processes earlier imports whose extraction is still pending; repeating it preserves completed processing and user data.
 
-Each document has its own directory under `apps/api/.data/documents`, containing `original` and `document.json`. The metadata currently records the name, format, size, upload date, and `uploaded` status; extracted fields will be added with processing. `DATA_DIR` overrides the storage directory. Originals and metadata survive page reloads and API restarts and are ignored by Git.
+Each document has its own directory under `apps/api/.data/documents`, containing `original` and `document.json`. Metadata includes file information, status, extracted fields, extraction outcome, revision, and review timestamp. Earlier metadata-only records are read as pending imports without replacing originals. Processing moves a document from `uploaded` to `needs_review`. `DATA_DIR` overrides the storage directory. Originals and metadata survive page reloads and API restarts and are ignored by Git.
 
 The API depends on a `DocumentStore` interface. Its local implementation identifies exact duplicates by SHA-256, writes both files into a temporary directory, then publishes the complete directory by renaming it. Concurrent identical uploads keep the first complete document. Validation rejects an invalid selection before any writes; an unexpected storage failure may leave earlier documents in a batch imported, so retrying safely reuses them. Interrupted staging directories are ignored by the collection.
 
 JSON storage is intended for this small local workspace. Azure deployment will require durable storage behind the same interface; the API container's filesystem is not the planned persistent store.
+
+Metadata changes are serialized per document within one API process, check the expected revision, and replace the JSON through a flushed temporary file and rename. Windows destination locks receive a bounded retry. A stale revision cannot overwrite newer fields. This local adapter does not coordinate multiple API processes; a future shared-storage adapter must enforce the same revision check atomically.
 
 ## Architecture
 

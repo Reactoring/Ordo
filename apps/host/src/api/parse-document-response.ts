@@ -17,7 +17,7 @@ function parseDocument(value: unknown): UploadedDocument {
     value.sizeBytes <= 0 ||
     typeof value.uploadedAt !== 'string' ||
     !Number.isFinite(Date.parse(value.uploadedAt)) ||
-    value.status !== 'uploaded'
+    (value.status !== 'uploaded' && value.status !== 'needs_review' && value.status !== 'reviewed')
   )
     throw new Error('Unexpected document response.');
 
