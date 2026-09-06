@@ -1,6 +1,6 @@
 import { Badge, Icon } from '@ordo/ui';
 import type { DocumentSummary } from '../document.types';
-import { formatDocumentAmount } from '../format-document';
+import { formatDocumentAmount, formatDocumentDate } from '../format-document';
 import { DocumentPreview } from './DocumentPreview';
 
 export function DocumentCard({ document }: { document: DocumentSummary }) {
@@ -33,6 +33,13 @@ export function DocumentCard({ document }: { document: DocumentSummary }) {
             {formatDocumentAmount(document)}
           </p>
         </div>
+        <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs">
+          <p className="font-medium text-ink">{document.supplier}</p>
+          <time dateTime={document.date} className="text-muted">
+            {formatDocumentDate(document.date)}
+          </time>
+        </div>
+        <p className="sr-only">Invoice reference: {document.reference}</p>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
           <Badge tone={needsReview ? 'warning' : 'success'}>
             <Icon name={needsReview ? 'clock' : 'check'} className="size-3.5" />
