@@ -143,7 +143,7 @@ Keys follow `['api', endpoint, params]`, separating endpoint and parameter combi
 
 `useTypedMutation` follows the same endpoint-based approach for writes. The mutation catalog owns the request and response decoder, while the hook exposes typed variables, results, and callbacks. The upload input uses browser `File` objects, so its variable type lives in the host; response types are shared through `@ordo/contracts`. Uploads use multipart form data and are not retried automatically. Feature hooks own invalidation of affected queries.
 
-`useDocumentUpload` validates the selection, reports upload and duplicate outcomes, and invalidates the document collection after each attempt. This also reveals any files saved before an unexpected batch failure. Successful uploads clear search so the imported documents are visible. Example metadata lives only in `tests/fixtures` and is not used by the running application.
+`useDocumentUpload` validates the selection, reports upload and duplicate outcomes, and invalidates the document collection after each attempt. This also reveals any files saved before an unexpected batch failure. Successful uploads clear search and the status filter so the imported documents are visible. Example metadata lives only in `tests/fixtures` and is not used by the running application.
 
 `useDocumentReview` loads details and prepares metadata-only imports once when opened. Successful extraction and review mutations cancel stale detail requests, update the typed detail cache without replacing a newer revision, and invalidate the collection. A conflicting save refreshes details while Review retains the draft. Failed background reads do not unmount an open form. The save callback resolves after cache updates, so returning to Documents shows the saved status.
 
@@ -178,7 +178,7 @@ pnpm dev
 | Standalone review | http://127.0.0.1:3001            |
 | API health        | http://127.0.0.1:4000/api/health |
 
-Use **Add documents** or drop files onto the import card. Each selection accepts up to five PDF/PNG/JPEG files, 10 MB each. The collection displays image previews and a PDF placeholder; **Open original** opens the saved file in a new tab. Reimporting identical bytes reports a duplicate. File-name search applies to all documents; file-format filters are not part of the interface.
+Use **Add documents** or drop files onto the import card. Each selection accepts up to five PDF/PNG/JPEG files, 10 MB each. The collection displays image previews and a PDF placeholder; **Open original** opens the saved file in a new tab. Reimporting identical bytes reports a duplicate. **All documents**, **Needs review**, and **Reviewed** filters combine with file-name search. The selected status lives in the URL (`?status=needs_review` or `?status=reviewed`) and survives refresh and browser history. Successful imports clear filters so new files are visible; files are not grouped by format.
 
 Select **Review** on a card or **Open review** in the summary to open the next unreviewed document. Earlier imports are prepared on first opening. Check or complete the form, then select **Save and validate**. The card becomes **Reviewed** and can be reopened with **View details**. Images and scanned PDFs show OCR suggestions with a reminder to check them, or a manual-entry explanation when reading fails. The original preview uses the browser's PDF viewer or an image; a new-tab link remains available if the browser cannot display it inline. Unsaved edits stay in the current form and are discarded when leaving the page.
 

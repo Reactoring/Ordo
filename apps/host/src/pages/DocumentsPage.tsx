@@ -9,7 +9,7 @@ import { ServiceStatus } from '../features/service-health/ServiceStatus';
 
 export function DocumentsPage() {
   const workspace = useDocumentsWorkspace();
-  const upload = useDocumentUpload(workspace.query.data?.uploadLimits, workspace.resetSearch);
+  const upload = useDocumentUpload(workspace.query.data?.uploadLimits, workspace.resetFilters);
   const hasDocuments = workspace.counts.all > 0;
   const hasResults = workspace.visibleDocuments.length > 0;
   const uploadCard = (
@@ -42,7 +42,9 @@ export function DocumentsPage() {
         />
       </div>
       <DocumentToolbar
-        count={workspace.counts.all}
+        counts={workspace.counts}
+        status={workspace.status}
+        onStatusChange={workspace.setStatus}
         search={workspace.search}
         onSearchChange={workspace.setSearch}
       />
@@ -87,6 +89,24 @@ export function DocumentsPage() {
                 title="Your documents are unavailable"
                 description="Reconnect to the document service to see your saved files."
               />
+            ) : hasDocuments && !workspace.search.trim() && workspace.status !== 'all' ? (
+              <EmptyState
+                icon={<Icon name="stack" className="size-7" />}
+                title={
+                  workspace.status === 'reviewed'
+                    ? 'No reviewed documents yet'
+                    : 'Everything is reviewed'
+                }
+                description={
+                  workspace.status === 'reviewed'
+                    ? 'Validate a document and it will appear here.'
+                    : 'You’re all caught up. Your validated documents are in Reviewed.'
+                }
+              >
+                <Button variant="secondary" onClick={workspace.resetFilters}>
+                  Show all documents
+                </Button>
+              </EmptyState>
             ) : hasDocuments ? (
               <EmptyState
                 icon={<Icon name="search" className="size-7" />}

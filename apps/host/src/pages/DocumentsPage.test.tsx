@@ -42,10 +42,10 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function renderWorkspace() {
+function renderWorkspace(path = '/documents') {
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[path]}>
         <DocumentsPage />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -53,12 +53,49 @@ function renderWorkspace() {
 }
 
 describe('document workspace', () => {
+  it('filters by review status from the URL and combines the filter with filename search', async () => {
+    stored = stored.map((document, index) => ({
+      ...document,
+      status: index === 1 ? 'reviewed' : document.status,
+    }));
+    const user = userEvent.setup();
+    renderWorkspace('/documents?status=reviewed');
+    expect(await screen.findAllByRole('article')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Reviewed 1' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await user.click(screen.getByRole('button', { name: 'Needs review 2' }));
+    expect(screen.getAllByRole('article')).toHaveLength(2);
+    await user.type(screen.getByRole('searchbox'), 'monogram');
+    expect(screen.getAllByRole('article')).toHaveLength(1);
+    expect(screen.getByRole('article', { name: 'monogram-invoice.png' })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Reviewed 1' }));
+    expect(screen.getByRole('heading', { name: 'No matching documents' })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Clear search' }));
+    expect(screen.getByRole('article', { name: 'orbit-software.pdf' })).toBeVisible();
+  });
+
+  it('explains an empty status and reveals imports made from the Reviewed filter', async () => {
+    const user = userEvent.setup();
+    renderWorkspace('/documents?status=reviewed');
+    expect(await screen.findByRole('heading', { name: 'No reviewed documents yet' })).toBeVisible();
+    await user.upload(
+      screen.getByLabelText('Choose documents'),
+      new File(['pdf'], 'new-invoice.pdf', { type: 'application/pdf' }),
+    );
+    expect(await screen.findByRole('article', { name: 'new-invoice.pdf' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'All documents 4' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
   it('loads server documents, searches filenames, and recovers from an empty result without type filters', async () => {
     const user = userEvent.setup();
     renderWorkspace();
     expect(await screen.findAllByRole('article')).toHaveLength(3);
     expect(screen.queryByText('Example documents')).not.toBeInTheDocument();
-    expect(screen.queryByRole('group', { name: 'Filter documents' })).not.toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Filter by review status' })).toBeVisible();
     await user.type(screen.getByRole('searchbox'), 'missing');
     expect(screen.getByRole('heading', { name: 'No matching documents' })).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Clear search' }));
