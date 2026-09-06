@@ -6,6 +6,7 @@ import type { RenderParameters } from 'pdfjs-dist/types/src/display/api.js';
 import type { ImageTextReader } from './read-image-text.js';
 
 import { DocumentReadLimitError } from './document-reader.js';
+import { ocrLimits } from './ocr-limits.js';
 export const extractionLimits = { maxPages: 20, maxOcrPages: 5, maxCharacters: 100_000 };
 const pdfRoot = path.dirname(createRequire(import.meta.url).resolve('pdfjs-dist/package.json'));
 
@@ -64,9 +65,9 @@ export async function readPdfDocument(bytes: Uint8Array, recognize: ImageTextRea
             );
           const original = page.getViewport({ scale: 1 });
           const scale = Math.min(
-            2,
-            2400 / Math.max(original.width, original.height),
-            Math.sqrt(4_000_000 / (original.width * original.height)),
+            ocrLimits.maxScale,
+            ocrLimits.maxSide / Math.max(original.width, original.height),
+            Math.sqrt(ocrLimits.maxOutputPixels / (original.width * original.height)),
           );
           const viewport = page.getViewport({ scale });
           const canvas = createCanvas(

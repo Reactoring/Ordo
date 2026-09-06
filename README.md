@@ -183,7 +183,7 @@ PDF.js first reads embedded PDF text. Pages with fewer than 40 non-whitespace ch
 | OCR concurrency                   | One worker; up to six active or waiting jobs   |
 | Recognition deadline              | 30 seconds per image                           |
 
-Imports wait for processing before returning. Simultaneous requests for the same pending document share one reader job. Workers and temporary language directories are released after processing. A review saved during extraction takes precedence over the extraction result.
+Imports wait for processing before returning. Simultaneous requests for the same pending document share one reader job. Each OCR worker is released after its job, including on timeout. Installed language models are copied lazily into one temporary directory per API process and reused across jobs; normal process shutdown removes that directory. Failed preparation can be retried. Images and scanned PDFs share rendering limits. A review saved during extraction takes precedence over the extraction result.
 
 The parser supports simple printed invoices and receipts with English or French labels. Missing or ambiguous values stay empty; missing amounts are never derived from other fields. Limits and unreadable documents lead to manual review. Blurred photos, handwriting, and complex layouts may require corrections.
 
