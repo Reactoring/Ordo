@@ -1,4 +1,5 @@
-import type { ApiQueries, DocumentResponse, ServiceHealthResponse } from '@ordo/contracts';
+import type { DocumentResponse, ServiceHealthResponse } from '@ordo/contracts';
+import type { ApiQueries } from '../api/schema';
 import { QueryClient } from '@tanstack/react-query';
 import { expectTypeOf } from 'vitest';
 import { getTypedQueryOptions } from '../api/endpoints';

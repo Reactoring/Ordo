@@ -61,6 +61,9 @@ module.exports = function createConfig(name, port, federation) {
       ],
     },
     plugins: [
+      new webpack.DefinePlugin({
+        ORDO_HOST_URL: JSON.stringify(process.env.HOST_URL ?? 'http://localhost:3000'),
+      }),
       new HtmlWebpackPlugin({
         template: path.join(root, 'config', 'index.html'),
         publicPath: '/',

@@ -34,6 +34,7 @@ export function createTypedQueryOptions<Schema extends QuerySchema<Schema>>(
       return definition.parse(value);
     };
 
+    // Tag the key for typed cache reads while keeping queryFn required in the returned options.
     return { queryKey: queryOptions({ queryKey, queryFn }).queryKey, queryFn };
   };
 }

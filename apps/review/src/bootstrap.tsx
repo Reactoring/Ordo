@@ -11,7 +11,7 @@ createRoot(root).render(
   <StrictMode>
     <div className="ordo-review">
       <AppShell navigation={<span className="text-sm font-semibold">Document review</span>}>
-        <ReviewModule onClose={() => window.location.assign('http://127.0.0.1:3000')} />
+        <ReviewModule onClose={() => window.location.assign(ORDO_HOST_URL)} />
       </AppShell>
     </div>
   </StrictMode>,

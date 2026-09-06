@@ -1,5 +1,6 @@
 import { useMutation, type UseMutationOptions } from '@tanstack/react-query';
-import { getTypedMutationOptions, type ApiMutations } from '../api/mutations';
+import { getTypedMutationOptions } from '../api/mutations';
+import type { ApiMutations } from '../api/schema';
 
 type Endpoint = keyof ApiMutations;
 type ManagedOptions = 'mutationKey' | 'mutationFn';

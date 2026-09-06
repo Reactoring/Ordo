@@ -1,4 +1,4 @@
-import type { ApiQueries } from '@ordo/contracts';
+import type { ApiQueries } from './schema';
 import { createTypedQueryOptions, type QueryEndpoints } from './typed-query-options';
 import { parseDocumentResponse, parseDocumentsResponse } from './parse-document-response';
 

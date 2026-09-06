@@ -1,5 +1,5 @@
 import { useQuery, type UseQueryOptions, type UseQueryResult } from '@tanstack/react-query';
-import type { ApiQueries } from '@ordo/contracts';
+import type { ApiQueries } from '../api/schema';
 import { getTypedQueryOptions } from '../api/endpoints';
 import type { QueryParameters } from '../api/typed-query-options';
 

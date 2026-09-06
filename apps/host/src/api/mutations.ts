@@ -1,20 +1,7 @@
-import type {
-  DocumentResponse,
-  ReviewDocumentInput,
-  UploadDocumentsResponse,
-} from '@ordo/contracts';
+import type { ApiMutations } from './schema';
 import { requestJson } from './http';
 import { parseDocumentResponse, parseUploadResponse } from './parse-document-response';
 import { createTypedMutationOptions, type MutationEndpoints } from './typed-mutation-options';
-
-export interface ApiMutations {
-  uploadDocuments: { variables: { files: readonly File[] }; response: UploadDocumentsResponse };
-  extractDocument: { variables: { id: string }; response: DocumentResponse };
-  reviewDocument: {
-    variables: { id: string; input: ReviewDocumentInput };
-    response: DocumentResponse;
-  };
-}
 
 const mutations: MutationEndpoints<ApiMutations> = {
   extractDocument: {

@@ -92,7 +92,7 @@ Each app generates utilities from its own sources and the shared UI package. The
 
 ## Typed requests and cache
 
-The host creates one TanStack Query client above React Router, preserving its cache across navigation. The shared `ApiQueries` type associates endpoint names with parameters and response types. The host's endpoint catalog supplies URL builders and runtime decoders: HTTP JSON enters as `unknown` and is checked before reaching the cache.
+The host creates one TanStack Query client above React Router, preserving its cache across navigation. `ApiQueries` and `ApiMutations` live together in `apps/host/src/api/schema.ts`: they describe the frontend's endpoint names, parameters, variables, and responses using shared contract types. The host's endpoint catalog supplies URL builders and runtime decoders: HTTP JSON enters as `unknown` and is checked before reaching the cache.
 
 ### Reading documents with `useTypedQuery`
 
@@ -203,6 +203,7 @@ Azure hosting and CI/CD are not configured yet. Each app builds into its own `di
 | Environment variable | Use                                                                                                     |
 | -------------------- | ------------------------------------------------------------------------------------------------------- |
 | `REVIEW_REMOTE_URL`  | Remote entry URL when building or starting the host; defaults to `http://127.0.0.1:3001/remoteEntry.js` |
+| `HOST_URL`           | Return URL when building or starting standalone Review; defaults to `http://localhost:3000`             |
 | `DATA_DIR`           | API document storage directory                                                                          |
 | `PORT` / `HOST`      | API listening address; defaults to `4000` / `127.0.0.1`                                                 |
 
