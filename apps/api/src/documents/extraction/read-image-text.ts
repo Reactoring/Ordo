@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { Worker } from 'node:worker_threads';
 import { createCanvas, loadImage } from '@napi-rs/canvas';
 import { imageSize } from 'image-size';
+import { DocumentReadLimitError } from './document-reader.js';
 
 export type ImageTextReader = (bytes: Uint8Array) => Promise<string>;
 export const ocrLimits = {
@@ -19,7 +20,9 @@ const require = createRequire(import.meta.url);
 async function normalizeImage(bytes: Uint8Array) {
   const { width, height } = imageSize(bytes);
   if (!width || !height || width * height > ocrLimits.maxInputPixels)
-    throw new Error('This image exceeds the 32-megapixel OCR limit. Enter its details manually.');
+    throw new DocumentReadLimitError(
+      'This image exceeds the 32-megapixel OCR limit. Enter its details manually.',
+    );
   if (width < 20 || height < 20) return null;
   const image = await loadImage(Buffer.from(bytes));
   const scale = Math.min(

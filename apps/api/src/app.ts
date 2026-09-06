@@ -4,7 +4,8 @@ import type { ApiErrorResponse, ServiceHealthResponse } from '@ordo/contracts';
 import type { DocumentStore } from './documents/document-store.js';
 import { LocalDocumentStore } from './documents/local-document-store.js';
 import { createDocumentRouter } from './documents/document-routes.js';
-import type { DocumentTextReader } from './documents/extraction/read-document-text.js';
+import type { DocumentTextReader } from './documents/extraction/document-reader.js';
+import { readDocumentText } from './documents/extraction/read-document-text.js';
 
 export function createApp(
   options: { documentStore?: DocumentStore; readDocumentText?: DocumentTextReader } = {},
@@ -21,7 +22,10 @@ export function createApp(
     new LocalDocumentStore(
       process.env.DATA_DIR ?? fileURLToPath(new URL('../.data/documents', import.meta.url)),
     );
-  app.use('/api/documents', createDocumentRouter(store, options.readDocumentText));
+  app.use(
+    '/api/documents',
+    createDocumentRouter(store, options.readDocumentText ?? readDocumentText),
+  );
 
   app.use((_request, response) => {
     response

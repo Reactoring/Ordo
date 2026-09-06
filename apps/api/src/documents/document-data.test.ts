@@ -7,7 +7,10 @@ describe('stored extraction upgrades', () => {
   const previous = {
     ...exampleDocumentDetails,
     fields: emptyDocumentFields(),
-    extraction: { status: 'manual', message: 'Images need manual entry.' },
+    extraction: {
+      status: 'manual',
+      message: 'Image OCR is not available yet. Enter the details from the original.',
+    },
   };
   it('offers OCR once to untouched imports that previously required manual entry', () => {
     expect(parseStoredDocument(previous, previous.id)).toMatchObject({

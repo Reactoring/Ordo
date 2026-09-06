@@ -77,7 +77,6 @@ export function parseStoredDocument(value: unknown, id: string): DocumentDetails
   if (
     !isDocumentFields(value.fields) ||
     !isRecord(value.extraction) ||
-    !['pending', 'extracted', 'manual', 'failed'].includes(String(value.extraction.status)) ||
     (value.extraction.message !== null && typeof value.extraction.message !== 'string') ||
     typeof value.revision !== 'number' ||
     !Number.isSafeInteger(value.revision) ||
@@ -100,11 +99,17 @@ export function parseStoredDocument(value: unknown, id: string): DocumentDetails
   ) {
     throw new Error(`Invalid extraction status: ${id}`);
   }
-  // Give untouched imports from before OCR one opportunity to use the new reader.
+  // Only the two outcomes from the former text-only reader need an OCR upgrade.
+  const needsOcrUpgrade =
+    value.extraction.message ===
+      'Image OCR is not available yet. Enter the details from the original.' ||
+    value.extraction.message ===
+      'No embedded text was found. Scanned PDF OCR is not available yet; enter the details manually.';
   const needsOcr =
     metadata.status === 'needs_review' &&
     status === 'manual' &&
     method === undefined &&
+    needsOcrUpgrade &&
     Object.values(value.fields).every((field) => field === null);
   return {
     ...metadata,

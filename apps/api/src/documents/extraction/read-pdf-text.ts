@@ -5,13 +5,11 @@ import { createCanvas } from '@napi-rs/canvas';
 import type { RenderParameters } from 'pdfjs-dist/types/src/display/api.js';
 import type { ImageTextReader } from './read-image-text.js';
 
-export type PdfTextReader = (bytes: Uint8Array) => Promise<string>;
+import { DocumentReadLimitError } from './document-reader.js';
 export const extractionLimits = { maxPages: 20, maxOcrPages: 5, maxCharacters: 100_000 };
 const pdfRoot = path.dirname(createRequire(import.meta.url).resolve('pdfjs-dist/package.json'));
 
-export class PdfTextLimitError extends Error {}
-
-export async function readPdfDocument(bytes: Uint8Array, recognize?: ImageTextReader) {
+export async function readPdfDocument(bytes: Uint8Array, recognize: ImageTextReader) {
   const loading = getDocument({
     data: new Uint8Array(bytes),
     useSystemFonts: true,
@@ -26,7 +24,7 @@ export async function readPdfDocument(bytes: Uint8Array, recognize?: ImageTextRe
   try {
     const pdf = await loading.promise;
     if (pdf.numPages > extractionLimits.maxPages)
-      throw new PdfTextLimitError(
+      throw new DocumentReadLimitError(
         'This PDF exceeds the 20-page extraction limit. Enter its details manually.',
       );
     let text = '';
@@ -55,13 +53,13 @@ export async function readPdfDocument(bytes: Uint8Array, recognize?: ImageTextRe
             previous = undefined;
           }
           if (text.length + pageText.length > extractionLimits.maxCharacters)
-            throw new PdfTextLimitError(
+            throw new DocumentReadLimitError(
               'This PDF contains too much text for automatic extraction. Enter its details manually.',
             );
         }
-        if (recognize && pageText.replace(/\s/g, '').length < 40) {
+        if (pageText.replace(/\s/g, '').length < 40) {
           if (++ocrPages > extractionLimits.maxOcrPages)
-            throw new PdfTextLimitError(
+            throw new DocumentReadLimitError(
               'This PDF exceeds the five scanned-page OCR limit. Enter its details manually.',
             );
           const original = page.getViewport({ scale: 1 });
@@ -92,7 +90,7 @@ export async function readPdfDocument(bytes: Uint8Array, recognize?: ImageTextRe
         } else if (pageText.trim()) textPages++;
         text += `${pageText}\n`;
         if (text.length > extractionLimits.maxCharacters)
-          throw new PdfTextLimitError(
+          throw new DocumentReadLimitError(
             'This PDF contains too much text for automatic extraction. Enter its details manually.',
           );
       } finally {
@@ -111,5 +109,3 @@ export async function readPdfDocument(bytes: Uint8Array, recognize?: ImageTextRe
     await loading.destroy();
   }
 }
-
-export const readPdfText: PdfTextReader = async (bytes) => (await readPdfDocument(bytes)).text;

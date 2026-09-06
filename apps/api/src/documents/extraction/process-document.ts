@@ -1,15 +1,12 @@
-import type { DocumentExtraction, DocumentFields } from '@ordo/contracts';
+import type { DocumentDetails, DocumentExtraction, DocumentFields } from '@ordo/contracts';
 import { DocumentConflictError, type DocumentStore } from '../document-store.js';
 import { emptyDocumentFields } from '../document-data.js';
 import { parseInvoiceText } from './parse-invoice.js';
-import { PdfTextLimitError } from './read-pdf-text.js';
-import { readDocumentText, type DocumentTextReader } from './read-document-text.js';
+import { DocumentReadLimitError, type DocumentTextReader } from './document-reader.js';
 
-export function createDocumentProcessor(
-  store: DocumentStore,
-  readText: DocumentTextReader = readDocumentText,
-) {
-  return async function processDocument(id: string) {
+export function createDocumentProcessor(store: DocumentStore, readText: DocumentTextReader) {
+  const pending = new Map<string, Promise<DocumentDetails | undefined>>();
+  async function extract(id: string) {
     const current = await store.find(id);
     if (!current || current.extraction.status !== 'pending' || current.status === 'reviewed')
       return current;
@@ -38,11 +35,10 @@ export function createDocumentProcessor(
       }
     } catch (error) {
       extraction =
-        error instanceof PdfTextLimitError
-          ? { status: 'manual', method: 'ocr', message: error.message }
+        error instanceof DocumentReadLimitError
+          ? { status: 'manual', message: error.message }
           : {
               status: 'failed',
-              method: current.fileType === 'PDF' ? 'mixed' : 'ocr',
               message:
                 'Automatic reading could not be completed. The original is saved; enter its details manually.',
             };
@@ -59,5 +55,13 @@ export function createDocumentProcessor(
       if (error instanceof DocumentConflictError) return store.find(id);
       throw error;
     }
+  }
+  return function processDocument(id: string) {
+    const existing = pending.get(id);
+    if (existing) return existing;
+    // Requests for the same pending document share one reader job and one stored result.
+    const operation = extract(id).finally(() => pending.delete(id));
+    pending.set(id, operation);
+    return operation;
   };
 }
