@@ -4,7 +4,7 @@ ORDO helps independent professionals collect purchase documents, review extracte
 
 ## Status
 
-The local application includes a federated review module, URL navigation, and persistent document imports. The Documents screen accepts PDF, PNG, and JPEG files through selection or drag-and-drop, displays saved originals, and supports file-name search and format filters. The API extracts fields from text-based PDFs and persists them for review. Files and extraction results survive page reloads and API restarts. The review form, correction workflow, OCR, and export are the next steps.
+The local application includes a federated review module, URL navigation, and persistent document imports. The Documents screen accepts PDF, PNG, and JPEG files through selection or drag-and-drop, displays saved originals, and supports file-name search and format filters. The API extracts fields from text-based PDFs and persists them for review. Review provides an original preview and an editable form through its public props; connecting document routes and correction persistence is the next step. OCR and export are not implemented yet.
 
 ## First release
 
@@ -56,7 +56,7 @@ This repository is a pnpm monorepo. **Applications** run independently; **packag
 
 Each workspace has its own `package.json`. pnpm links `"@ordo/ui": "workspace:*"` to the local package, which is included at build time. Shared package changes require rebuilding their consumers. Dependencies, build output, and local caches are excluded from Git.
 
-`@ordo/ui` exports buttons, badges, filter chips, icons, empty states, and a shared application shell. `Button` supports primary, secondary, and ghost variants, two sizes, native button props, and `type="button"` by default. Navigation links use the same appearance through `buttonClassName`, keeping the UI package independent of React Router.
+`@ordo/ui` exports buttons, badges, filter chips, icons, empty states, form fields, and a shared application shell. `Button` supports primary, secondary, and ghost variants, two sizes, native button props, and `type="button"` by default. Navigation links use the same appearance through `buttonClassName`, keeping the UI package independent of React Router. `TextField` and `SelectField` associate native controls with labels, hints, and validation errors, and accept React Hook Form registration through native refs and events.
 
 Components use Tailwind utilities. `@ordo/ui/theme.css` provides fonts, Preflight, theme tokens, and base styles. Only the document owner imports it: the host bootstrap or Review's standalone bootstrap. Theme variables use `static` so they remain available to independently compiled utilities.
 
@@ -84,7 +84,9 @@ Review also has a standalone development page. The host uses the exposed compone
 
 The host owns navigation, Review owns its interface, and the API owns processing. Applications communicate through public contracts. Shared packages contain no application state. Future business rules will remain independent of React, HTTP, and extraction libraries.
 
-The review form will receive document data and typed callbacks through `ReviewModuleProps`. The host will own document requests, save mutations, and cache invalidation; Review will own the editable draft and form feedback. An asynchronous save callback will let Review track completion or failure without importing the host's query client, endpoints, or router. Standalone development will supply example data and callbacks through the same interface. These props will be added with the form; the current contract exposes only `onClose`.
+`ReviewModuleProps` accepts either an empty state with `onClose`, or document details, an original URL, and typed `onSave`/`onClose` callbacks. The host owns requests, save mutations, and cache invalidation; Review owns its React Hook Form draft, validation, and feedback. `onSave` resolves with the saved document or rejects with an error. Review does not import the host's query client, endpoints, or router; its behavior tests exercise the same props without either provider.
+
+The review form uses decimal strings for editing and converts them to integer cents before saving. It requires a supplier, document reference, real calendar date, supported currency, and non-negative amounts with at most two decimal places. Subtotal plus tax must equal the total. Failed saves preserve the draft; successful saves reset the form to the returned fields and revision. Background data updates do not reset a draft. A newer revision disables saving until the user reopens the document. Changing document IDs starts a fresh form.
 
 The common Webpack factory handles TypeScript, CSS, fonts, and federation. Each frontend supplies its name, port, and exposed or consumed modules. Query dependencies form a separate chunk. Frontends have separate builds and can be deployed independently while their contracts and shared dependencies remain compatible.
 
@@ -142,13 +144,14 @@ Keys follow `['api', endpoint, params]`, separating endpoint and parameter combi
 - Webpack 5 and Module Federation
 - React Router for URL-based navigation
 - TanStack Query for server state, requests, and caching
+- React Hook Form for the review draft and validation
 - Tailwind CSS 4 through PostCSS, with shared theme tokens and responsive utilities
 - Vitest and React Testing Library for user-facing behavior
 - ESLint and Prettier
 - Node.js and Express
 - pnpm workspaces with a committed lockfile
 
-Redux Toolkit, React Hook Form, PDF.js, and Tesseract.js will accompany the features that need them. Azure Pipelines and Azure hosting are planned; backend hosting depends on OCR runtime requirements. Deployment is not configured yet.
+PDF.js handles embedded PDF text in the API. Redux Toolkit and Tesseract.js will accompany the features that need them. Azure Pipelines and Azure hosting are planned; backend hosting depends on OCR runtime requirements. Deployment is not configured yet.
 
 ## Development
 

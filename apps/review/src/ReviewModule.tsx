@@ -1,8 +1,17 @@
 import type { ReviewModuleProps } from '@ordo/contracts';
 import { Button, PageMessage } from '@ordo/ui';
+import { ReviewWorkspace } from './features/review/components/ReviewWorkspace';
 import './styles.css';
 
-export default function ReviewModule({ onClose }: ReviewModuleProps) {
+export default function ReviewModule(props: ReviewModuleProps) {
+  if (props.document) {
+    return (
+      <div className="ordo-review">
+        <ReviewWorkspace key={props.document.id} {...props} />
+      </div>
+    );
+  }
+  const { onClose } = props;
   return (
     <div className="ordo-review">
       <PageMessage
