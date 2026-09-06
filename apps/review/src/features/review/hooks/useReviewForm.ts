@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useForm, useWatch, type Resolver } from 'react-hook-form';
-import type { DocumentDetails, ReviewDocumentInput } from '@ordo/contracts';
+import type { DocumentDetails, DocumentReviewProps } from '@ordo/contracts';
 import {
   parseCents,
   toDocumentFields,
@@ -19,10 +19,7 @@ const resolver: Resolver<ReviewFormValues> = (values) => {
   };
 };
 
-export function useReviewForm(
-  document: DocumentDetails,
-  onSave: (input: ReviewDocumentInput) => Promise<DocumentDetails>,
-) {
+export function useReviewForm(document: DocumentDetails, onSave: DocumentReviewProps['onSave']) {
   const [revision, setRevision] = useState(document.revision);
   const [saved, setSaved] = useState(false);
   const form = useForm<ReviewFormValues>({
@@ -35,16 +32,11 @@ export function useReviewForm(
     control: form.control,
     name: ['subtotalCents', 'taxCents', 'totalCents'],
   });
-  const [subtotal, tax, total] = amounts.map(parseCents);
+  const subtotal = parseCents(amounts[0]);
+  const tax = parseCents(amounts[1]);
+  const total = parseCents(amounts[2]);
   const balanced =
-    subtotal !== null &&
-    subtotal !== undefined &&
-    tax !== null &&
-    tax !== undefined &&
-    total !== null &&
-    total !== undefined
-      ? subtotal + tax === total
-      : undefined;
+    subtotal !== null && tax !== null && total !== null ? subtotal + tax === total : undefined;
   const submit = form.handleSubmit(async (values) => {
     form.clearErrors('root');
     setSaved(false);
@@ -64,7 +56,8 @@ export function useReviewForm(
     }
   });
   return {
-    ...form,
+    register: form.register,
+    formState: form.formState,
     submit,
     balanced,
     saved: saved && !form.formState.isDirty,

@@ -1,14 +1,12 @@
+import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router';
-import type { DocumentDetails, ReviewDocumentInput } from '@ordo/contracts';
+import type { DocumentReviewProps, ReviewDocumentInput } from '@ordo/contracts';
 import { getTypedQueryOptions } from '../../../api/endpoints';
 import { useTypedQuery } from '../../../hooks/useTypedQuery';
 import type { ReviewNotice } from '../review-notice';
 
-export function useReviewFlow(
-  id: string,
-  persist: (input: ReviewDocumentInput) => Promise<DocumentDetails>,
-) {
+export function useReviewFlow(id: string, persist: DocumentReviewProps['onSave']) {
   const [params] = useSearchParams();
   const isQueue = params.get('mode') === 'queue';
   const navigate = useNavigate();
@@ -84,4 +82,3 @@ export function useReviewFlow(
           : 'Validate the last document and return to Reviewed.',
   };
 }
-import { useEffect, useRef } from 'react';

@@ -15,15 +15,4 @@ export type {
   UploadLimits,
 } from './documents.js';
 
-import type { DocumentDetails, ReviewDocumentInput } from './documents.js';
-
-export type ReviewModuleProps = { onClose: () => void } & (
-  | { document?: undefined; originalUrl?: never; onSave?: never }
-  | {
-      document: DocumentDetails;
-      originalUrl: string;
-      onSave: (input: ReviewDocumentInput) => Promise<DocumentDetails>;
-      saveLabel?: string;
-      saveHint?: string;
-    }
-);
+export type { DocumentReviewProps, ReviewModuleProps } from './review.js';

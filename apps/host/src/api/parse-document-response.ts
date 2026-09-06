@@ -5,7 +5,7 @@ import type {
   UploadDocumentsResponse,
 } from '@ordo/contracts';
 
-export function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 

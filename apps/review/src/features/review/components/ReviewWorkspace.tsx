@@ -1,16 +1,7 @@
-import type { DocumentDetails, ReviewDocumentInput } from '@ordo/contracts';
+import type { DocumentReviewProps } from '@ordo/contracts';
 import { Badge, Button, Icon, SelectField, TextField } from '@ordo/ui';
 import { useReviewForm } from '../hooks/useReviewForm';
 import { OriginalDocument } from './OriginalDocument';
-
-interface ReviewWorkspaceProps {
-  document: DocumentDetails;
-  originalUrl: string;
-  onSave: (input: ReviewDocumentInput) => Promise<DocumentDetails>;
-  onClose: () => void;
-  saveLabel?: string;
-  saveHint?: string;
-}
 
 export function ReviewWorkspace({
   document,
@@ -19,7 +10,7 @@ export function ReviewWorkspace({
   onClose,
   saveLabel = 'Save and validate',
   saveHint = 'Your corrections are saved when you validate.',
-}: ReviewWorkspaceProps) {
+}: DocumentReviewProps) {
   const form = useReviewForm(document, onSave);
   const { errors, isSubmitting, isDirty } = form.formState;
   const reviewed = form.saved || (document.status === 'reviewed' && !isDirty);

@@ -15,7 +15,7 @@ export async function getJson(path: string, signal: AbortSignal): Promise<unknow
 export async function requestJson(
   path: string,
   options: {
-    method?: 'POST' | 'PATCH' | 'DELETE';
+    method?: 'POST' | 'PATCH';
     body?: BodyInit;
     signal?: AbortSignal;
     headers?: Record<string, string>;
