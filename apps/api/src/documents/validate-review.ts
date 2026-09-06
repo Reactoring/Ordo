@@ -1,5 +1,4 @@
-import type { ReviewDocumentInput } from '@ordo/contracts';
-import { isDocumentFields, isRecord } from './document-data.js';
+import { isDocumentFields, isRecord, type ReviewDocumentInput } from '@ordo/contracts';
 
 export class ReviewValidationError extends Error {}
 

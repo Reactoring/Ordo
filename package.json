@@ -8,14 +8,14 @@
     "node": "^22.22.0 || ^24.19.0"
   },
   "scripts": {
-    "dev": "pnpm --parallel --filter \"./apps/*\" dev",
+    "dev": "pnpm --filter @ordo/contracts build && pnpm --parallel --filter \"./apps/*\" --filter @ordo/contracts dev",
     "build": "pnpm -r build",
-    "typecheck": "pnpm -r typecheck && tsc --noEmit",
+    "typecheck": "pnpm --filter @ordo/contracts build && pnpm -r typecheck && tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "pnpm --filter @ordo/contracts build && vitest run",
+    "test:watch": "pnpm --filter @ordo/contracts build && vitest",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {

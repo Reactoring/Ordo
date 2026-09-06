@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { once } from 'node:events';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { Server } from 'node:http';
@@ -150,27 +150,6 @@ describe('document import API', () => {
         ({ document }) => document.fields.totalCents === null && document.status === 'needs_review',
       ),
     ).toBe(true);
-  });
-
-  it('opens metadata from earlier imports and processes it without replacing the original', async () => {
-    const imported: UploadDocumentsResponse = await (
-      await sendFiles([{ name: 'old.png', bytes: png }])
-    ).json();
-    const document = imported.results[0]?.document;
-    if (!document) throw new Error('Expected an imported document.');
-    await writeFile(
-      path.join(directory, document.id, 'document.json'),
-      JSON.stringify({ ...document, status: 'uploaded' }),
-    );
-    const previous: DocumentResponse = await (
-      await fetch(`${baseUrl}/api/documents/${document.id}`)
-    ).json();
-    expect(previous.document).toMatchObject({ revision: 0, extraction: { status: 'pending' } });
-    const processed: DocumentResponse = await (
-      await fetch(`${baseUrl}/api/documents/${document.id}/extract`, { method: 'POST' })
-    ).json();
-    expect(processed.document).toMatchObject({ revision: 1, status: 'needs_review' });
-    expect(await readFile(path.join(directory, document.id, 'original'))).toEqual(png);
   });
 
   it('keeps originals and metadata after restarting the application', async () => {

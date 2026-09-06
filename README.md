@@ -31,19 +31,21 @@ Originals and saved corrections survive reloads and API restarts. Failed saves k
 
 ## Architecture
 
-This is a pnpm monorepo. **Apps** have their own development server and production build. **Packages** provide shared types or UI components.
+This is a pnpm monorepo. **Apps** have their own development server and production build. **Packages** provide shared contracts, validation, or UI components.
 
 | Directory            | Responsibility                                                                                          |
 | -------------------- | ------------------------------------------------------------------------------------------------------- |
 | `apps/host`          | Application shell, React Router, TanStack Query, document collection, and review navigation             |
 | `apps/review`        | Independent React microfrontend: original preview, React Hook Form draft, validation, and save feedback |
 | `apps/api`           | Express endpoints, document processing, and persistence                                                 |
-| `packages/contracts` | Type-only API contracts and microfrontend props, independent of React and Node.js                       |
+| `packages/contracts` | API contracts, runtime document guards, and microfrontend props, independent of React and Node.js       |
 | `packages/ui`        | Reusable buttons, form fields, badges, filter chips, icons, layout, and theme                           |
 | `config`             | Shared Webpack factory and HTML template                                                                |
 | `tests`              | Shared setup and fictional fixtures; behavior tests live beside the code they exercise                  |
 
-Dependencies such as `"@ordo/ui": "workspace:*"` resolve to local packages. UI code is included in each consuming application's build; contract imports are erased during compilation. Changing a shared package requires checking and rebuilding its consumers.
+Dependencies such as `"@ordo/ui": "workspace:*"` resolve to local packages. UI code is included in each consuming application's build. `contracts` compiles to JavaScript and type declarations: type imports disappear, while the host and API use the same runtime document guards. Storage decoding and HTTP response decoding remain in their respective apps.
+
+`pnpm dev` builds contracts first, then watches the package alongside the apps. Tests and type checks also prepare its build; tests resolve the package's source so watch mode sees changes immediately. Production builds follow workspace dependency order. Changing a shared package requires checking and rebuilding its consumers.
 
 ### Microfrontend and composite UI
 
@@ -189,9 +191,9 @@ The parser supports simple printed invoices and receipts with English or French 
 pnpm check          # Formatting, lint, types, tests, and production builds
 pnpm test:watch     # Watch behavior tests
 pnpm format        # Format sources
-pnpm --filter @ordo/host build
-pnpm --filter @ordo/review build
-pnpm --filter @ordo/api build
+pnpm --filter @ordo/host... build
+pnpm --filter @ordo/review... build
+pnpm --filter @ordo/api... build
 ```
 
 Strict TypeScript, ESLint, Prettier, Vitest, and React Testing Library cover the workspace. Tests exercise typed requests, real OCR and scanned PDFs, processing concurrency, persistence, stale revisions, form validation, and review navigation. Compile-time tests verify the typed query and mutation APIs. Review's component tests run without host providers; host integration tests use a local alias for the remote, so runtime federation also needs a browser check. Type checking runs separately from Webpack transpilation.

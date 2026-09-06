@@ -16,3 +16,11 @@ export type {
 } from './documents.js';
 
 export type { DocumentReviewProps, ReviewModuleProps } from './review.js';
+
+export {
+  isRecord,
+  isDocumentFields,
+  isUploadedDocument,
+  isDocumentDetails,
+  isUploadLimits,
+} from './document-validation.js';

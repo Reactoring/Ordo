@@ -1,30 +1,16 @@
-import type {
-  DocumentResponse,
-  DocumentsResponse,
-  UploadedDocument,
-  UploadDocumentsResponse,
+import {
+  isRecord,
+  isUploadedDocument,
+  isDocumentDetails,
+  isUploadLimits,
+  type DocumentResponse,
+  type DocumentsResponse,
+  type UploadedDocument,
+  type UploadDocumentsResponse,
 } from '@ordo/contracts';
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
 function parseDocument(value: unknown): UploadedDocument {
-  if (
-    !isRecord(value) ||
-    typeof value.id !== 'string' ||
-    !/^[a-f0-9]{64}$/.test(value.id) ||
-    typeof value.fileName !== 'string' ||
-    !value.fileName ||
-    (value.fileType !== 'PDF' && value.fileType !== 'PNG' && value.fileType !== 'JPG') ||
-    typeof value.sizeBytes !== 'number' ||
-    !Number.isSafeInteger(value.sizeBytes) ||
-    value.sizeBytes <= 0 ||
-    typeof value.uploadedAt !== 'string' ||
-    !Number.isFinite(Date.parse(value.uploadedAt)) ||
-    (value.status !== 'uploaded' && value.status !== 'needs_review' && value.status !== 'reviewed')
-  )
-    throw new Error('Unexpected document response.');
+  if (!isUploadedDocument(value)) throw new Error('Unexpected document response.');
 
   return {
     id: value.id,
@@ -37,17 +23,7 @@ function parseDocument(value: unknown): UploadedDocument {
 }
 
 export function parseDocumentsResponse(value: unknown): DocumentsResponse {
-  if (
-    !isRecord(value) ||
-    !Array.isArray(value.documents) ||
-    !isRecord(value.uploadLimits) ||
-    typeof value.uploadLimits.maxFiles !== 'number' ||
-    !Number.isSafeInteger(value.uploadLimits.maxFiles) ||
-    value.uploadLimits.maxFiles <= 0 ||
-    typeof value.uploadLimits.maxFileSizeBytes !== 'number' ||
-    !Number.isSafeInteger(value.uploadLimits.maxFileSizeBytes) ||
-    value.uploadLimits.maxFileSizeBytes <= 0
-  )
+  if (!isRecord(value) || !Array.isArray(value.documents) || !isUploadLimits(value.uploadLimits))
     throw new Error('Unexpected document collection response.');
   return {
     documents: value.documents.map(parseDocument),
@@ -72,49 +48,11 @@ export function parseUploadResponse(value: unknown): UploadDocumentsResponse {
   };
 }
 
-function nullableText(value: unknown): value is string | null {
-  return value === null || (typeof value === 'string' && value.length <= 200);
-}
-
-function nullableCents(value: unknown): value is number | null {
-  return value === null || (typeof value === 'number' && Number.isSafeInteger(value) && value >= 0);
-}
-
 export function parseDocumentResponse(value: unknown): DocumentResponse {
-  if (!isRecord(value) || !isRecord(value.document))
+  if (!isRecord(value) || !isDocumentDetails(value.document))
     throw new Error('Unexpected document details response.');
   const { fields, extraction, revision, reviewedAt } = value.document;
   const metadata = parseDocument(value.document);
-  if (
-    !isRecord(fields) ||
-    !nullableText(fields.supplier) ||
-    !nullableText(fields.invoiceNumber) ||
-    !nullableText(fields.invoiceDate) ||
-    (fields.currency !== null &&
-      fields.currency !== 'EUR' &&
-      fields.currency !== 'USD' &&
-      fields.currency !== 'GBP') ||
-    !nullableCents(fields.subtotalCents) ||
-    !nullableCents(fields.taxCents) ||
-    !nullableCents(fields.totalCents) ||
-    !isRecord(extraction) ||
-    (extraction.status !== 'pending' &&
-      extraction.status !== 'extracted' &&
-      extraction.status !== 'manual' &&
-      extraction.status !== 'failed') ||
-    (extraction.message !== null && typeof extraction.message !== 'string') ||
-    (extraction.method !== undefined &&
-      extraction.method !== 'pdf_text' &&
-      extraction.method !== 'ocr' &&
-      extraction.method !== 'mixed') ||
-    typeof revision !== 'number' ||
-    !Number.isSafeInteger(revision) ||
-    revision < 0 ||
-    (reviewedAt !== null &&
-      (typeof reviewedAt !== 'string' || !Number.isFinite(Date.parse(reviewedAt))))
-  ) {
-    throw new Error('Unexpected document details response.');
-  }
   return {
     document: {
       ...metadata,
