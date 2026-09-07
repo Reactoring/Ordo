@@ -204,11 +204,11 @@ Set variables in the shell; `.env` files are not loaded automatically. Frontends
 
 ## Azure deployment
 
-| Application | Address                                                                  | Azure resource                           |
-| ----------- | ------------------------------------------------------------------------ | ---------------------------------------- |
-| Host        | https://ordo-host.bravemoss-c87c792b.francecentral.azurecontainerapps.io | Container App, nginx, public ingress     |
-| Review      | —                                                                        | Container App, nginx, public ingress     |
-| API         | Reached through the host `/api` proxy                                    | Container App, Node.js, internal ingress |
+| Application | Address                                                                    | Azure resource                           |
+| ----------- | -------------------------------------------------------------------------- | ---------------------------------------- |
+| Host        | https://ordo-host.bravemoss-c87c792b.francecentral.azurecontainerapps.io   | Container App, nginx, public ingress     |
+| Review      | https://ordo-review.bravemoss-c87c792b.francecentral.azurecontainerapps.io | Container App, nginx, public ingress     |
+| API         | Reached through the host `/api` proxy                                      | Container App, Node.js, internal ingress |
 
 ### Setup
 
