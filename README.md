@@ -215,7 +215,7 @@ Set variables in the shell; `.env` files are not loaded automatically. Frontends
 - Resource group `ordo-rg` in France Central: a Container Apps environment (Consumption plan), a Basic container registry, a storage account with a `documents` file share, and a Log Analytics workspace.
 - One `Dockerfile` per application, built from the repository root. The API image ships the compiled code, the Tesseract models, and the canvas binary; the file share is mounted at `/data`. Host and Review are production Webpack builds served by nginx, configured by the `nginx.conf.template` next to each app.
 - The host receives `REVIEW_REMOTE_URL` at build time and proxies `/api` to the API over the environment's internal DNS. Review allows only the host origin through CORS and serves `remoteEntry.js` with `no-cache`, so a new Review release is loaded on the next host visit.
-- Each app keeps one replica running so pages open without a cold start. GitHub Actions signs in with OpenID Connect; no Azure secret is stored in GitHub.
+- GitHub Actions signs in with OpenID Connect; no Azure secret is stored in GitHub.
 
 ### CI/CD: one pipeline per application
 
