@@ -1,6 +1,5 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { AppShell, OrdoBrand } from '@ordo/ui';
 import '@ordo/ui/theme.css';
 import ReviewModule from './ReviewModule';
 
@@ -10,16 +9,9 @@ if (!root) throw new Error('The application root element is missing.');
 createRoot(root).render(
   <StrictMode>
     <div className="ordo-review">
-      <AppShell
-        brand={
-          <a href={ORDO_HOST_URL} aria-label="ORDO home" className="shrink-0 rounded-lg">
-            <OrdoBrand />
-          </a>
-        }
-        navigation={<span className="text-sm font-semibold">Document review</span>}
-      >
+      <main className="mx-auto max-w-[1480px] px-5 py-8 sm:px-8 lg:px-12 lg:py-10">
         <ReviewModule onClose={() => window.location.assign(ORDO_HOST_URL)} />
-      </AppShell>
+      </main>
     </div>
   </StrictMode>,
 );
