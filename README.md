@@ -4,7 +4,7 @@ ORDO is a local purchase-document workspace. Import invoices and receipts, check
 
 ## Purpose and scope
 
-ORDO is a personal project exploring React microfrontends with Webpack Module Federation through a concrete document-review workflow. It prioritizes frontend architecture and user experience, with deliberately limited product and infrastructure complexity. Azure deployment and CI/CD are planned for a later stage.
+ORDO is a personal project exploring React microfrontends with Webpack Module Federation through a concrete document-review workflow. It prioritizes frontend architecture and user experience, with deliberately limited product and infrastructure complexity. The three applications run on Azure Container Apps, each with its own GitHub Actions pipeline; see [Azure deployment](#azure-deployment).
 
 ## Run locally
 
@@ -191,7 +191,7 @@ pnpm --filter @ordo/api... build
 
 Strict TypeScript, ESLint, Prettier, Vitest, and React Testing Library cover the workspace. Tests exercise typed requests, real OCR and scanned PDFs, processing concurrency, persistence, stale revisions, form validation, and review navigation. Compile-time tests verify the typed query and mutation APIs. Review's component tests run without host providers; host integration tests use a local alias for the remote, so runtime federation also needs a browser check. Type checking runs separately from Webpack transpilation.
 
-Azure hosting and CI/CD are not configured yet. Each app builds into its own `dist` directory. Future deployment needs durable storage behind `DocumentStore`, the installed OCR models and native canvas runtime, API routing, and compatible host/remote releases.
+Each app builds into its own `dist` directory. Development and build commands do not deploy anything.
 
 | Environment variable | Use                                                                                                     |
 | -------------------- | ------------------------------------------------------------------------------------------------------- |
@@ -200,4 +200,36 @@ Azure hosting and CI/CD are not configured yet. Each app builds into its own `di
 | `DATA_DIR`           | API document storage directory                                                                          |
 | `PORT` / `HOST`      | API listening address; defaults to `4000` / `127.0.0.1`                                                 |
 
-Set variables in the shell; `.env` files are not loaded automatically. Frontends expect the root of their respective origins. The host needs an SPA fallback for page routes, excluding assets and `/api`; remote assets must allow the host's origin through CORS. Development and build commands do not deploy anything.
+Set variables in the shell; `.env` files are not loaded automatically. Frontends expect the root of their respective origins. The host needs an SPA fallback for page routes, excluding assets and `/api`; remote assets must allow the host's origin through CORS.
+
+## Azure deployment
+
+| Application | Address                                                                    | Azure resource                           |
+| ----------- | -------------------------------------------------------------------------- | ---------------------------------------- |
+| Host        | https://ordo-host.bravemoss-c87c792b.francecentral.azurecontainerapps.io   | Container App, nginx, public ingress     |
+| Review      | https://ordo-review.bravemoss-c87c792b.francecentral.azurecontainerapps.io | Container App, nginx, public ingress     |
+| API         | Reached through the host `/api` proxy                                      | Container App, Node.js, internal ingress |
+
+### Setup
+
+- Resource group `ordo-rg` in France Central: a Container Apps environment (Consumption plan), a Basic container registry, a storage account with a `documents` file share, and a Log Analytics workspace.
+- One `Dockerfile` per application, built from the repository root. The API image ships the compiled code, the Tesseract models, and the canvas binary; the file share is mounted at `/data`. Host and Review are production Webpack builds served by nginx, configured by the `nginx.conf.template` next to each app.
+- The host receives `REVIEW_REMOTE_URL` at build time and proxies `/api` to the API over the environment's internal DNS. Review allows only the host origin through CORS and serves `remoteEntry.js` with `no-cache`, so a new Review release is loaded on the next host visit.
+- Every app scales to zero when idle. GitHub Actions signs in with OpenID Connect; no Azure secret is stored in GitHub.
+
+### CI/CD: one pipeline per application
+
+| Workflow            | Runs when these paths change                         | Deploys       |
+| ------------------- | ---------------------------------------------------- | ------------- |
+| `deploy-api.yml`    | `apps/api`, `packages/contracts`, workspace files    | `ordo-api`    |
+| `deploy-host.yml`   | `apps/host`, `packages`, `config`, workspace files   | `ordo-host`   |
+| `deploy-review.yml` | `apps/review`, `packages`, `config`, workspace files | `ordo-review` |
+
+`ci.yml` runs `pnpm check` on every pull request and push to `main`. Each deployment workflow first waits for that CI run on the same commit and stops unless it succeeded; it then builds the image, pushes it tagged with the commit SHA, and updates its Container App, which creates a new revision.
+
+Advantages:
+
+- A change under `apps/review` ships Review only; the host loads the new remote at runtime without being redeployed.
+- A change under `apps/api` never rebuilds a frontend, and a frontend change never restarts the API.
+- Shared packages are compiled into their consumers, so a change there runs every affected pipeline.
+- The pipelines resolve the host and Review addresses from the Container Apps environment at build time.

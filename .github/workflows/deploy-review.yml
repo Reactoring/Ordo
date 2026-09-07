@@ -1,0 +1,78 @@
+name: Deploy Review
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - apps/review/**
+      - packages/**
+      - config/**
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - tsconfig.base.json
+      - .dockerignore
+      - .github/workflows/deploy-review.yml
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-review
+  cancel-in-progress: false
+
+env:
+  RESOURCE_GROUP: ordo-rg
+  ENVIRONMENT: ordo-env
+  REGISTRY: ordoacr466622.azurecr.io
+  APP: ordo-review
+
+jobs:
+  gate:
+    name: Wait for CI on this commit
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    steps:
+      - name: Require a successful CI run for ${{ github.sha }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          for attempt in $(seq 1 60); do
+            read -r status conclusion < <(gh run list --workflow ci.yml --commit "$GITHUB_SHA" --json status,conclusion --jq '.[0] | "\(.status) \(.conclusion)"')
+            if [ "${status:-missing}" = "completed" ]; then
+              echo "CI concluded with: $conclusion"
+              [ "$conclusion" = "success" ] && exit 0
+              exit 1
+            fi
+            echo "CI status: ${status:-not started}, waiting..."
+            sleep 30
+          done
+          echo "CI did not complete in time."
+          exit 1
+
+  deploy:
+    needs: gate
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - run: az acr login --name ${REGISTRY%%.*}
+      - name: Resolve the host address
+        run: |
+          DOMAIN=$(az containerapp env show --resource-group "$RESOURCE_GROUP" --name "$ENVIRONMENT" --query properties.defaultDomain -o tsv)
+          echo "HOST_URL=https://ordo-host.$DOMAIN" >> "$GITHUB_ENV"
+      - name: Build and push image
+        run: |
+          IMAGE="$REGISTRY/$APP:${GITHUB_SHA::12}"
+          docker build -f apps/review/Dockerfile --build-arg "HOST_URL=$HOST_URL" -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+      - name: Update container app
+        run: az containerapp update --resource-group "$RESOURCE_GROUP" --name "$APP" --image "$IMAGE" --output none
