@@ -66,6 +66,7 @@ module.exports = function createConfig(name, port, federation) {
       }),
       new HtmlWebpackPlugin({
         template: path.join(root, 'config', 'index.html'),
+        favicon: path.join(root, 'packages', 'ui', 'src', 'brand', 'ordo-mark.svg'),
         publicPath: '/',
       }),
       new webpack.container.ModuleFederationPlugin({
