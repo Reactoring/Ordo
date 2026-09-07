@@ -1,0 +1,43 @@
+# HOST_ORIGIN is substituted at container start and is the only origin allowed to load the remote.
+map_hash_bucket_size 128;
+map $http_origin $review_cors_origin {
+    default "";
+    "${HOST_ORIGIN}" $http_origin;
+}
+
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    location = /index.html {
+        add_header Cache-Control "no-cache";
+    }
+
+    # The remote entry keeps a stable name; browsers must revalidate it on every host load.
+    location = /remoteEntry.js {
+        add_header Access-Control-Allow-Origin $review_cors_origin always;
+        add_header Vary Origin always;
+        add_header Cache-Control "no-cache";
+    }
+
+    # Hashed chunks never change their bytes.
+    location ~* "\.[0-9a-f]{16,}\.(js|css|map)$" {
+        add_header Access-Control-Allow-Origin $review_cors_origin always;
+        add_header Vary Origin always;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        try_files $uri =404;
+    }
+
+    location ~* "\.(js|css|map|woff2?|png|jpe?g|svg|ico)$" {
+        add_header Access-Control-Allow-Origin $review_cors_origin always;
+        add_header Vary Origin always;
+        add_header Cache-Control "public, max-age=3600";
+        try_files $uri =404;
+    }
+
+    location / {
+        try_files $uri /index.html;
+    }
+}
