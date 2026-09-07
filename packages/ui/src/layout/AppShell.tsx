@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react';
-import { OrdoBrand } from '../brand/OrdoBrand';
 
 interface AppShellProps {
+  brand: ReactNode;
   children: ReactNode;
   navigation: ReactNode;
   aside?: ReactNode;
 }
 
-export function AppShell({ children, navigation, aside }: AppShellProps) {
+export function AppShell({ brand, children, navigation, aside }: AppShellProps) {
   return (
     <>
       <a
@@ -18,7 +18,7 @@ export function AppShell({ children, navigation, aside }: AppShellProps) {
       </a>
       <header className="bg-plum-950 text-white">
         <div className="mx-auto flex min-h-20 max-w-[1480px] items-center gap-5 px-5 sm:gap-8 sm:px-8 lg:px-12">
-          <OrdoBrand />
+          {brand}
           <span className="h-8 w-px bg-white/15" aria-hidden="true" />
           {navigation}
           {aside ? <div className="ml-auto hidden sm:block">{aside}</div> : null}

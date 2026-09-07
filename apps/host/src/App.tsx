@@ -1,5 +1,5 @@
-import { NavLink, Navigate, Route, Routes } from 'react-router';
-import { AppShell } from '@ordo/ui';
+import { Link, NavLink, Navigate, Route, Routes } from 'react-router';
+import { AppShell, OrdoBrand } from '@ordo/ui';
 import { DocumentsPage } from './pages/DocumentsPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { ReviewPage } from './pages/ReviewPage';
@@ -7,6 +7,11 @@ import { ReviewPage } from './pages/ReviewPage';
 export function App() {
   return (
     <AppShell
+      brand={
+        <Link to="/documents" aria-label="ORDO home" className="shrink-0 rounded-lg">
+          <OrdoBrand />
+        </Link>
+      }
       navigation={
         <nav aria-label="Main navigation" className="self-stretch">
           <NavLink
