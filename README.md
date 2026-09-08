@@ -2,6 +2,11 @@
 
 ORDO is a local purchase-document workspace. Import invoices and receipts, check extracted information against the original, and save reviewed documents. PDF text extraction and image OCR run in the Node.js API; no external AI service is required.
 
+## Live demos
+
+- [ORDO application](https://ordo-host.bravemoss-c87c792b.francecentral.azurecontainerapps.io)
+- [Review microfrontend](https://ordo-review.bravemoss-c87c792b.francecentral.azurecontainerapps.io)
+
 ## Purpose and scope
 
 ORDO is a personal project exploring React microfrontends with Webpack Module Federation through a concrete document-review workflow. It prioritizes frontend architecture and user experience, with deliberately limited product and infrastructure complexity. The three applications run on Azure Container Apps, each with its own GitHub Actions pipeline; see [Azure deployment](#azure-deployment).
@@ -204,11 +209,11 @@ Set variables in the shell; `.env` files are not loaded automatically. Frontends
 
 ## Azure deployment
 
-| Application | Address                                                                    | Azure resource                           |
-| ----------- | -------------------------------------------------------------------------- | ---------------------------------------- |
-| Host        | https://ordo-host.bravemoss-c87c792b.francecentral.azurecontainerapps.io   | Container App, nginx, public ingress     |
-| Review      | https://ordo-review.bravemoss-c87c792b.francecentral.azurecontainerapps.io | Container App, nginx, public ingress     |
-| API         | Reached through the host `/api` proxy                                      | Container App, Node.js, internal ingress |
+| Application | Azure resource                           |
+| ----------- | ---------------------------------------- |
+| Host        | Container App, nginx, public ingress     |
+| Review      | Container App, nginx, public ingress     |
+| API         | Container App, Node.js, internal ingress |
 
 ### Setup
 
